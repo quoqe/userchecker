@@ -27,28 +27,7 @@ def create_app():
     # Security middleware
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     
-    # Security headers
-    csp = {
-        'default-src': "'self'",
-        'script-src': "'self' 'unsafe-inline'",
-        'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
-        'font-src': "'self' https://fonts.gstatic.com",
-        'img-src': "'self' data:",
-        'connect-src': "'self'"
-    }
-    
-    Talisman(app, 
-        force_https=os.environ.get('FORCE_HTTPS', 'false').lower() == 'true',
-        strict_transport_security=True,
-        strict_transport_security_max_age=31536000,
-        content_security_policy=csp,
-        referrer_policy='strict-origin-when-cross-origin',
-        feature_policy={
-            'geolocation': "'none'",
-            'microphone': "'none'",
-            'camera': "'none'"
-        }
-    )
+    # No Flask-Talisman or CSP, allow Cloudflare to handle security headers
     
     # Rate limiting
     limiter = Limiter(
