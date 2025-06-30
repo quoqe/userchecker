@@ -2,270 +2,443 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Qernel - OSINT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qernel - Advanced OSINT Username Intelligence</title>
+    <meta name="description" content="Advanced OSINT username checker with real-time intelligence gathering across multiple platforms">
     <link rel="icon" href="{{ url_for('static', filename='eye.png') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-    .filter-btn {
-        background: #1c2963;
-        color: #e0cffc;
-        border: 1.5px solid #4088b8;
-        border-radius: 7px;
-        padding: 0.5em 1.3em;
-        font-size: 1rem;
-        font-weight: 600;
-        margin: 0 0.2em;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s, border 0.2s;
-    }
-    .filter-btn.active, .filter-btn:hover {
-        background: #375b9e;
-        color: #fff;
-        border-color: #4088b8;
-    }
-    #results-tbody {
-        opacity: 1;
-        transition: opacity 0.35s cubic-bezier(.4,1.5,.7,1);
-        will-change: opacity;
-    }
-    #results-tbody.fading {
-        opacity: 0;
-    }
-    #check-btn:disabled,
-    #check-btn[disabled] {
-        background: #d7c8db !important;
-        color: #b09cb7 !important;
-        cursor: not-allowed !important;
-        box-shadow: none !important;
-        transform: none !important;
-        border: none !important;
-        transition: none !important;
-    }
-    #check-btn:disabled:hover,
-    #check-btn[disabled]:hover {
-        background: #d7c8db !important;
-        color: #b09cb7 !important;
-        transform: none !important;
-        transition: none !important;
-    }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="spotlight"></div>
-    <div class="animated-bg"></div>
-    <div class="container glass">
-        <h1><span class="accent">Qernel</span> Username Checker</h1>
-        <form id="check-form" autocomplete="off">
-            <input type="text" name="username" placeholder="Enter username" required>
-            <button type="submit" id="check-btn">Check</button>
-        </form>
-        <div id="progress-container">
-            <div class="progress-bar-bg">
-                <div id="progress-bar" class="progress-bar-fg">0%</div>
+    <!-- Background particles -->
+    <div class="bg-particles" id="particles"></div>
+    
+    <!-- Spotlight effect -->
+    <div class="spotlight" id="spotlight"></div>
+    
+    <div class="container">
+        <div class="glass-card">
+            <!-- Header -->
+            <div class="header">
+                <h1>Qernel</h1>
+                <p class="subtitle">Advanced OSINT Username Intelligence Platform</p>
             </div>
-            <div id="progress-label" style="margin-top:0.5em;"></div>
+            
+            <!-- Search Form -->
+            <form id="search-form" class="search-form" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                <input 
+                    type="text" 
+                    name="username" 
+                    class="search-input" 
+                    placeholder="Enter target username..." 
+                    required 
+                    maxlength="50"
+                    pattern="[a-zA-Z0-9._-]+"
+                    title="Username can only contain letters, numbers, dots, underscores, and hyphens"
+                >
+                <button type="submit" id="search-btn" class="search-btn">
+                    <span class="btn-text">Analyze</span>
+                    <div class="loading-spinner" style="display: none;"></div>
+                </button>
+            </form>
+            
+            <!-- Progress Section -->
+            <div id="progress-section" class="progress-section">
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div id="progress-text" class="progress-text">Initializing scan...</div>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div id="stats-grid" class="stats-grid" style="display: none;">
+                <div class="stat-card">
+                    <div id="total-found" class="stat-number">0</div>
+                    <div class="stat-label">Found</div>
+                </div>
+                <div class="stat-card">
+                    <div id="total-checked" class="stat-number">0</div>
+                    <div class="stat-label">Checked</div>
+                </div>
+                <div class="stat-card">
+                    <div id="success-rate" class="stat-number">0%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div id="scan-time" class="stat-number">0s</div>
+                    <div class="stat-label">Scan Time</div>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="results-section" class="results-section">
+                <!-- Filter Bar -->
+                <div id="filter-bar" class="filter-bar" style="display: none;">
+                    <button type="button" class="filter-btn active" data-filter="all">All Results</button>
+                    <button type="button" class="filter-btn" data-filter="found">Found</button>
+                    <button type="button" class="filter-btn" data-filter="not-found">Not Found</button>
+                    <button type="button" class="filter-btn" data-filter="error">Errors</button>
+                </div>
+                
+                <!-- Results Header -->
+                <div class="results-header" style="display: none;">
+                    <h2 class="results-title">Intelligence Report</h2>
+                    <div id="results-count" class="results-count">0 results</div>
+                </div>
+                
+                <!-- Results Table -->
+                <div id="results-table-container" class="results-table-container" style="display: none;">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Platform</th>
+                                <th>Status</th>
+                                <th>Category</th>
+                                <th>Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-        <div id="results-container" style="display:none;">
-            <div id="filter-bar" style="display:none; margin-bottom: 1em; text-align:center;">
-                <button type="button" class="filter-btn active" data-filter="all">All</button>
-                <button type="button" class="filter-btn" data-filter="found">Found</button>
-                <button type="button" class="filter-btn" data-filter="notfound">Not Found</button>
-            </div>
-            <div id="results">
-                <h2>Results</h2>
-                <table>
-                    <thead>
-                        <tr><th>Site</th><th>Status</th><th>Profile URL</th></tr>
-                    </thead>
-                    <tbody id="results-tbody"></tbody>
-                </table>
-            </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Developed by <span class="accent">Radic</span> • Advanced OSINT Intelligence Platform</p>
         </div>
-        <footer>
-            <span>Made by <span style="color:#ff5f5f;">Radic</span> • @5jpg</span>
-        </footer>
     </div>
+
     <script>
-    let allResults = [];
-    let lastRenderedCount = 0;
-    let searchRunning = false;
+        // Application state
+        let appState = {
+            allResults: [],
+            lastRenderedCount: 0,
+            searchRunning: false,
+            currentFilter: 'all',
+            startTime: null,
+            scanInterval: null
+        };
 
-    document.getElementById('check-form').onsubmit = function(e) {
-        e.preventDefault();
-        if (searchRunning) return;
-        searchRunning = true;
-        allResults = [];
-        lastRenderedCount = 0;
-        const rc = document.getElementById('results-container');
-        rc.style.display = 'none';
-        rc.classList.remove('visible', 'fade-in');
-        document.getElementById('results-tbody').innerHTML = '';
-        document.getElementById('progress-container').classList.remove('visible', 'fade-in');
-        document.getElementById('progress-bar').style.width = '0%';
-        document.getElementById('progress-bar').innerText = '0%';
-        document.getElementById('progress-label').innerText = 'Starting...';
-        document.getElementById('filter-bar').style.display = 'none';
-        document.getElementById('check-btn').disabled = true;
+        // DOM elements
+        const elements = {
+            searchForm: document.getElementById('search-form'),
+            searchBtn: document.getElementById('search-btn'),
+            btnText: document.querySelector('.btn-text'),
+            loadingSpinner: document.querySelector('.loading-spinner'),
+            progressSection: document.getElementById('progress-section'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            statsGrid: document.getElementById('stats-grid'),
+            resultsSection: document.getElementById('results-section'),
+            filterBar: document.getElementById('filter-bar'),
+            resultsHeader: document.querySelector('.results-header'),
+            resultsTableContainer: document.getElementById('results-table-container'),
+            resultsTbody: document.getElementById('results-tbody'),
+            resultsCount: document.getElementById('results-count'),
+            totalFound: document.getElementById('total-found'),
+            totalChecked: document.getElementById('total-checked'),
+            successRate: document.getElementById('success-rate'),
+            scanTime: document.getElementById('scan-time')
+        };
 
-        setTimeout(() => {
-            document.getElementById('progress-container').classList.add('visible', 'fade-in');
-        }, 10);
+        // Initialize particles
+        function initParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
 
-        const formData = new FormData(this);
-        fetch('/start_check', {method: 'POST', body: formData})
-            .then(r => r.json())
+        // Spotlight effect
+        function initSpotlight() {
+            const spotlight = document.getElementById('spotlight');
+            
+            document.addEventListener('mousemove', (e) => {
+                const x = e.clientX;
+                const y = e.clientY;
+                
+                spotlight.style.background = `radial-gradient(
+                    circle at ${x}px ${y}px,
+                    rgba(0, 212, 255, 0.15) 0%,
+                    rgba(124, 58, 237, 0.08) 30%,
+                    transparent 70%
+                )`;
+            });
+        }
+
+        // Update stats
+        function updateStats(results, progress, total) {
+            const found = results.filter(r => r.found === true).length;
+            const checked = progress;
+            const successRate = checked > 0 ? Math.round((found / checked) * 100) : 0;
+            
+            elements.totalFound.textContent = found;
+            elements.totalChecked.textContent = checked;
+            elements.successRate.textContent = successRate + '%';
+            
+            if (appState.startTime) {
+                const elapsed = Math.round((Date.now() - appState.startTime) / 1000);
+                elements.scanTime.textContent = elapsed + 's';
+            }
+        }
+
+        // Update progress
+        function updateProgress(progress, total, done) {
+            const percent = total > 0 ? Math.round((progress / total) * 100) : 0;
+            
+            elements.progressBar.style.width = percent + '%';
+            
+            if (done) {
+                elements.progressText.textContent = `Scan complete • ${progress}/${total} platforms analyzed`;
+                clearInterval(appState.scanInterval);
+            } else {
+                elements.progressText.textContent = `Analyzing platforms • ${progress}/${total} complete`;
+            }
+        }
+
+        // Render results table
+        function renderResults(results) {
+            const tbody = elements.resultsTbody;
+            
+            // Add new results
+            for (let i = appState.lastRenderedCount; i < results.length; i++) {
+                const result = results[i];
+                const row = document.createElement('tr');
+                row.className = 'fade-in';
+                
+                let statusClass, statusText;
+                if (result.found === true) {
+                    statusClass = 'found';
+                    statusText = 'Found';
+                } else if (result.found === false) {
+                    statusClass = 'not-found';
+                    statusText = 'Not Found';
+                } else {
+                    statusClass = 'error';
+                    statusText = 'Error';
+                }
+                
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(result.site)}</strong></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td><span class="category-badge">${escapeHtml(result.category || 'misc')}</span></td>
+                    <td><a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer" class="result-link">View Profile</a></td>
+                `;
+                
+                tbody.appendChild(row);
+            }
+            
+            appState.lastRenderedCount = results.length;
+            
+            // Update results count
+            const filteredCount = getFilteredResults().length;
+            elements.resultsCount.textContent = `${filteredCount} result${filteredCount !== 1 ? 's' : ''}`;
+        }
+
+        // Filter results
+        function getFilteredResults() {
+            switch (appState.currentFilter) {
+                case 'found':
+                    return appState.allResults.filter(r => r.found === true);
+                case 'not-found':
+                    return appState.allResults.filter(r => r.found === false);
+                case 'error':
+                    return appState.allResults.filter(r => r.found === null);
+                default:
+                    return appState.allResults;
+            }
+        }
+
+        // Apply filter
+        function applyFilter(filter) {
+            appState.currentFilter = filter;
+            
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            
+            // Re-render table
+            elements.resultsTbody.innerHTML = '';
+            appState.lastRenderedCount = 0;
+            renderResults(getFilteredResults());
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Show/hide sections
+        function showSection(element) {
+            element.style.display = 'block';
+            setTimeout(() => element.classList.add('visible'), 10);
+        }
+
+        function hideSection(element) {
+            element.classList.remove('visible');
+            setTimeout(() => element.style.display = 'none', 500);
+        }
+
+        // Reset UI
+        function resetUI() {
+            appState.allResults = [];
+            appState.lastRenderedCount = 0;
+            appState.currentFilter = 'all';
+            
+            elements.progressBar.style.width = '0%';
+            elements.progressText.textContent = 'Initializing scan...';
+            elements.resultsTbody.innerHTML = '';
+            
+            hideSection(elements.progressSection);
+            hideSection(elements.resultsSection);
+            elements.statsGrid.style.display = 'none';
+            elements.filterBar.style.display = 'none';
+            elements.resultsHeader.style.display = 'none';
+            elements.resultsTableContainer.style.display = 'none';
+            
+            // Reset filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === 'all');
+            });
+        }
+
+        // Poll progress
+        function pollProgress(jobId) {
+            fetch(`/progress/${jobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        elements.progressText.textContent = data.error;
+                        setSearchState(false);
+                        return;
+                    }
+                    
+                    // Update progress
+                    updateProgress(data.progress, data.total, data.done);
+                    
+                    // Update results
+                    if (data.results && data.results.length > 0) {
+                        appState.allResults = data.results;
+                        
+                        // Show results section if not visible
+                        if (!elements.resultsSection.classList.contains('visible')) {
+                            showSection(elements.resultsSection);
+                            elements.statsGrid.style.display = 'grid';
+                            elements.filterBar.style.display = 'flex';
+                            elements.resultsHeader.style.display = 'flex';
+                            elements.resultsTableContainer.style.display = 'block';
+                        }
+                        
+                        renderResults(getFilteredResults());
+                        updateStats(data.results, data.progress, data.total);
+                    }
+                    
+                    // Continue polling or finish
+                    if (!data.done) {
+                        setTimeout(() => pollProgress(jobId), 500);
+                    } else {
+                        setSearchState(false);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling progress:', error);
+                    elements.progressText.textContent = 'Network error occurred';
+                    setSearchState(false);
+                });
+        }
+
+        // Set search state
+        function setSearchState(searching) {
+            appState.searchRunning = searching;
+            elements.searchBtn.disabled = searching;
+            
+            if (searching) {
+                elements.btnText.style.display = 'none';
+                elements.loadingSpinner.style.display = 'inline-block';
+                appState.startTime = Date.now();
+                
+                // Start scan time counter
+                appState.scanInterval = setInterval(() => {
+                    if (appState.startTime) {
+                        const elapsed = Math.round((Date.now() - appState.startTime) / 1000);
+                        elements.scanTime.textContent = elapsed + 's';
+                    }
+                }, 1000);
+            } else {
+                elements.btnText.style.display = 'inline';
+                elements.loadingSpinner.style.display = 'none';
+                clearInterval(appState.scanInterval);
+            }
+        }
+
+        // Form submission
+        elements.searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (appState.searchRunning) return;
+            
+            const username = this.username.value.trim();
+            if (!username) return;
+            
+            // Validate username format
+            if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+                alert('Username can only contain letters, numbers, dots, underscores, and hyphens');
+                return;
+            }
+            
+            resetUI();
+            setSearchState(true);
+            showSection(elements.progressSection);
+            
+            const formData = new FormData(this);
+            
+            fetch('/start_check', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
             .then(data => {
                 if (data.job_id) {
                     pollProgress(data.job_id);
                 } else {
-                    document.getElementById('progress-label').innerText = data.error || 'Error';
-                    document.getElementById('check-btn').disabled = false; // Re-enable on error
-                    searchRunning = false;
+                    elements.progressText.textContent = data.error || 'Error occurred';
+                    setSearchState(false);
                 }
             })
-            .catch(() => {
-                document.getElementById('progress-label').innerText = 'Network error.';
-                document.getElementById('check-btn').disabled = false;
-                searchRunning = false;
+            .catch(error => {
+                console.error('Error starting check:', error);
+                elements.progressText.textContent = 'Network error occurred';
+                setSearchState(false);
             });
-    };
+        });
 
-    function pollProgress(job_id) {
-        fetch('/progress/' + job_id)
-            .then(r => r.json())
-            .then(data => {
-                if (data.error) {
-                    document.getElementById('progress-label').innerText = data.error;
-                    document.getElementById('check-btn').disabled = false;
-                    searchRunning = false;
-                    return;
-                }
-                document.getElementById('progress-bar').style.width = data.percent + '%';
-                document.getElementById('progress-bar').innerText = data.percent + '%';
-                document.getElementById('progress-label').innerText = data.progress + ' / ' + data.total + (data.done ? ' - Done!' : '');
+        // Filter button events
+        elements.filterBar.addEventListener('click', function(e) {
+            if (e.target.classList.contains('filter-btn')) {
+                applyFilter(e.target.dataset.filter);
+            }
+        });
 
-                const rc = document.getElementById('results-container');
-                if (data.results && data.results.length > 0 && rc.style.display !== 'block') {
-                    rc.style.display = 'block';
-                    rc.classList.add('visible', 'fade-in');
-                }
-
-                updateResultsTable(data.results || []);
-
-                if (!data.done) {
-                    setTimeout(() => pollProgress(job_id), 400);
-                } else {
-                    document.getElementById('progress-label').innerText = 'Done!';
-                    document.getElementById('check-btn').disabled = false;
-                    searchRunning = false;
-                }
-            })
-            .catch(() => {
-                document.getElementById('progress-label').innerText = 'Network error.';
-                document.getElementById('check-btn').disabled = false;
-                searchRunning = false;
-            });
-    }
-
-    function updateResultsTable(results) {
-        if (results.length === 0) {
-            document.getElementById('results-tbody').innerHTML = '';
-            document.getElementById('filter-bar').style.display = 'none';
-            lastRenderedCount = 0;
-            allResults = [];
-            return;
-        }
-        allResults = results;
-        document.getElementById('filter-bar').style.display = 'block';
-        const tbody = document.getElementById('results-tbody');
-        for (let i = lastRenderedCount; i < results.length; i++) {
-            const result = results[i];
-            let statusClass = result.found === null ? 'error' : (result.found ? 'found' : 'notfound');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${result.site}</td>
-                <td><span class="status ${statusClass}">${
-                    result.found === null ? 'Error' :
-                    result.found ? 'Found' : 'Not Found'
-                }</span></td>
-                <td><a href="${result.url}" target="_blank">Profile</a></td>
-            `;
-            tbody.appendChild(row);
-        }
-        lastRenderedCount = results.length;
-
-        const activeBtn = document.querySelector('.filter-btn.active');
-        if (activeBtn && activeBtn.getAttribute('data-filter') !== 'all') {
-            filterResults(activeBtn.getAttribute('data-filter'), true);
-        }
-    }
-
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('filter-btn')) {
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            e.target.classList.add('active');
-            filterResults(e.target.getAttribute('data-filter'));
-        }
-    });
-
-    function filterResults(filter, instant = false) {
-        let filtered = [];
-        if (filter === 'all') {
-            filtered = allResults;
-        } else if (filter === 'found') {
-            filtered = allResults.filter(r => r.found === true);
-        } else if (filter === 'notfound') {
-            filtered = allResults.filter(r => r.found === false);
-        }
-        const tbody = document.getElementById('results-tbody');
-        if (!instant) {
-            tbody.classList.add('fading');
-            setTimeout(() => {
-                renderTableRows(filtered);
-                tbody.classList.remove('fading');
-            }, 350);
-        } else {
-            renderTableRows(filtered);
-        }
-    }
-
-    function renderTableRows(filteredResults) {
-        const tbody = document.getElementById('results-tbody');
-        tbody.innerHTML = '';
-        for (let i = 0; i < filteredResults.length; i++) {
-            const result = filteredResults[i];
-            let statusClass = result.found === null ? 'error' : (result.found ? 'found' : 'notfound');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${result.site}</td>
-                <td><span class="status ${statusClass}">${
-                    result.found === null ? 'Error' :
-                    result.found ? 'Found' : 'Not Found'
-                }</span></td>
-                <td><a href="${result.url}" target="_blank">Profile</a></td>
-            `;
-            tbody.appendChild(row);
-        }
-    }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initParticles();
+            initSpotlight();
+        });
     </script>
-    <script>
-const spotlight = document.querySelector('.spotlight');
-document.body.addEventListener('mousemove', e => {
-  const x = e.clientX;
-  const y = e.clientY;
-  spotlight.style.background = `
-    radial-gradient(circle at ${x}px ${y}px,
-      rgba(165,215,232,0.28) 0px,
-      rgba(87,108,188,0.18) 120px,
-      rgba(11,36,71,0.0) 220px,
-      rgba(11,36,71,0.82) 480px
-    )
-  `;
-});
-</script>
-
 </body>
 </html>
