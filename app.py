@@ -157,10 +157,9 @@ def create_app():
             
             # Rate limiting by IP
             client_ip = get_client_ip()
-            ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()[:16]
             
-            # Log request
-            ip_logger.info(f"{ip_hash} {username}")
+            # Log request (no encryption)
+            ip_logger.info(f"{client_ip} {username}")
             
             # Generate secure job ID
             job_id = generate_job_id()
@@ -181,7 +180,7 @@ def create_app():
                     'created': time.time(),
                     'owner': owner,
                     'username': username,
-                    'ip_hash': ip_hash
+                    'ip': client_ip
                 }
             
             # Start background task
