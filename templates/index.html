@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Qernel - OSINT</title>
+    <link rel="icon" href="{{ url_for('static', filename='eye.png') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+    .filter-btn {
+        background: #1c2963;
+        color: #e0cffc;
+        border: 1.5px solid #4088b8;
+        border-radius: 7px;
+        padding: 0.5em 1.3em;
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0.2em;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s, border 0.2s;
+    }
+    .filter-btn.active, .filter-btn:hover {
+        background: #375b9e;
+        color: #fff;
+        border-color: #4088b8;
+    }
+    #results-tbody {
+        opacity: 1;
+        transition: opacity 0.35s cubic-bezier(.4,1.5,.7,1);
+        will-change: opacity;
+    }
+    #results-tbody.fading {
+        opacity: 0;
+    }
+    #check-btn:disabled,
+    #check-btn[disabled] {
+        background: #d7c8db !important;
+        color: #b09cb7 !important;
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+        transform: none !important;
+        border: none !important;
+        transition: none !important;
+    }
+    #check-btn:disabled:hover,
+    #check-btn[disabled]:hover {
+        background: #d7c8db !important;
+        color: #b09cb7 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+    </style>
+</head>
+<body>
+    <div class="spotlight"></div>
+    <div class="animated-bg"></div>
+    <div class="container glass">
+        <h1><span class="accent">Qernel</span> Username Checker</h1>
+        <form id="check-form" autocomplete="off">
+            <input type="text" name="username" placeholder="Enter username" required>
+            <button type="submit" id="check-btn">Check</button>
+        </form>
+        <div id="progress-container">
+            <div class="progress-bar-bg">
+                <div id="progress-bar" class="progress-bar-fg">0%</div>
+            </div>
+            <div id="progress-label" style="margin-top:0.5em;"></div>
+        </div>
+        <div id="results-container" style="display:none;">
+            <div id="filter-bar" style="display:none; margin-bottom: 1em; text-align:center;">
+                <button type="button" class="filter-btn active" data-filter="all">All</button>
+                <button type="button" class="filter-btn" data-filter="found">Found</button>
+                <button type="button" class="filter-btn" data-filter="notfound">Not Found</button>
+            </div>
+            <div id="results">
+                <h2>Results</h2>
+                <table>
+                    <thead>
+                        <tr><th>Site</th><th>Status</th><th>Profile URL</th></tr>
+                    </thead>
+                    <tbody id="results-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <footer>
+            <span>Made by <span style="color:#ff5f5f;">Radic</span> • @5jpg</span>
+        </footer>
+    </div>
+    <script>
+    let allResults = [];
+    let lastRenderedCount = 0;
+    let searchRunning = false;
+
+    document.getElementById('check-form').onsubmit = function(e) {
+        e.preventDefault();
+        if (searchRunning) return;
+        searchRunning = true;
+        allResults = [];
+        lastRenderedCount = 0;
+        const rc = document.getElementById('results-container');
+        rc.style.display = 'none';
+        rc.classList.remove('visible', 'fade-in');
+        document.getElementById('results-tbody').innerHTML = '';
+        document.getElementById('progress-container').classList.remove('visible', 'fade-in');
+        document.getElementById('progress-bar').style.width = '0%';
+        document.getElementById('progress-bar').innerText = '0%';
+        document.getElementById('progress-label').innerText = 'Starting...';
+        document.getElementById('filter-bar').style.display = 'none';
+        document.getElementById('check-btn').disabled = true;
+
+        setTimeout(() => {
+            document.getElementById('progress-container').classList.add('visible', 'fade-in');
+        }, 10);
+
+        const formData = new FormData(this);
+        fetch('/start_check', {method: 'POST', body: formData})
+            .then(r => r.json())
+            .then(data => {
+                if (data.job_id) {
+                    pollProgress(data.job_id);
+                } else {
+                    document.getElementById('progress-label').innerText = data.error || 'Error';
+                    document.getElementById('check-btn').disabled = false; // Re-enable on error
+                    searchRunning = false;
+                }
+            })
+            .catch(() => {
+                document.getElementById('progress-label').innerText = 'Network error.';
+                document.getElementById('check-btn').disabled = false;
+                searchRunning = false;
+            });
+    };
+
+    function pollProgress(job_id) {
+        fetch('/progress/' + job_id)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('progress-label').innerText = data.error;
+                    document.getElementById('check-btn').disabled = false;
+                    searchRunning = false;
+                    return;
+                }
+                document.getElementById('progress-bar').style.width = data.percent + '%';
+                document.getElementById('progress-bar').innerText = data.percent + '%';
+                document.getElementById('progress-label').innerText = data.progress + ' / ' + data.total + (data.done ? ' - Done!' : '');
+
+                const rc = document.getElementById('results-container');
+                if (data.results && data.results.length > 0 && rc.style.display !== 'block') {
+                    rc.style.display = 'block';
+                    rc.classList.add('visible', 'fade-in');
+                }
+
+                updateResultsTable(data.results || []);
+
+                if (!data.done) {
+                    setTimeout(() => pollProgress(job_id), 400);
+                } else {
+                    document.getElementById('progress-label').innerText = 'Done!';
+                    document.getElementById('check-btn').disabled = false;
+                    searchRunning = false;
+                }
+            })
+            .catch(() => {
+                document.getElementById('progress-label').innerText = 'Network error.';
+                document.getElementById('check-btn').disabled = false;
+                searchRunning = false;
+            });
+    }
+
+    function updateResultsTable(results) {
+        if (results.length === 0) {
+            document.getElementById('results-tbody').innerHTML = '';
+            document.getElementById('filter-bar').style.display = 'none';
+            lastRenderedCount = 0;
+            allResults = [];
+            return;
+        }
+        allResults = results;
+        document.getElementById('filter-bar').style.display = 'block';
+        const tbody = document.getElementById('results-tbody');
+        for (let i = lastRenderedCount; i < results.length; i++) {
+            const result = results[i];
+            let statusClass = result.found === null ? 'error' : (result.found ? 'found' : 'notfound');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${result.site}</td>
+                <td><span class="status ${statusClass}">${
+                    result.found === null ? 'Error' :
+                    result.found ? 'Found' : 'Not Found'
+                }</span></td>
+                <td><a href="${result.url}" target="_blank">Profile</a></td>
+            `;
+            tbody.appendChild(row);
+        }
+        lastRenderedCount = results.length;
+
+        const activeBtn = document.querySelector('.filter-btn.active');
+        if (activeBtn && activeBtn.getAttribute('data-filter') !== 'all') {
+            filterResults(activeBtn.getAttribute('data-filter'), true);
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('filter-btn')) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            filterResults(e.target.getAttribute('data-filter'));
+        }
+    });
+
+    function filterResults(filter, instant = false) {
+        let filtered = [];
+        if (filter === 'all') {
+            filtered = allResults;
+        } else if (filter === 'found') {
+            filtered = allResults.filter(r => r.found === true);
+        } else if (filter === 'notfound') {
+            filtered = allResults.filter(r => r.found === false);
+        }
+        const tbody = document.getElementById('results-tbody');
+        if (!instant) {
+            tbody.classList.add('fading');
+            setTimeout(() => {
+                renderTableRows(filtered);
+                tbody.classList.remove('fading');
+            }, 350);
+        } else {
+            renderTableRows(filtered);
+        }
+    }
+
+    function renderTableRows(filteredResults) {
+        const tbody = document.getElementById('results-tbody');
+        tbody.innerHTML = '';
+        for (let i = 0; i < filteredResults.length; i++) {
+            const result = filteredResults[i];
+            let statusClass = result.found === null ? 'error' : (result.found ? 'found' : 'notfound');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${result.site}</td>
+                <td><span class="status ${statusClass}">${
+                    result.found === null ? 'Error' :
+                    result.found ? 'Found' : 'Not Found'
+                }</span></td>
+                <td><a href="${result.url}" target="_blank">Profile</a></td>
+            `;
+            tbody.appendChild(row);
+        }
+    }
+    </script>
+    <script>
+const spotlight = document.querySelector('.spotlight');
+document.body.addEventListener('mousemove', e => {
+  const x = e.clientX;
+  const y = e.clientY;
+  spotlight.style.background = `
+    radial-gradient(circle at ${x}px ${y}px,
+      rgba(165,215,232,0.28) 0px,
+      rgba(87,108,188,0.18) 120px,
+      rgba(11,36,71,0.0) 220px,
+      rgba(11,36,71,0.82) 480px
+    )
+  `;
+});
+</script>
+
+</body>
+</html>
