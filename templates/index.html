@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qernel - Advanced OSINT Username Checker</title>
+    <title>@5jpg - Advanced OSINT Username Checker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <meta name="description" content="Advanced OSINT username checker tool for cybersecurity professionals">
@@ -27,7 +27,7 @@
             <!-- Header -->
             <div class="header">
                 <h1>
-                    Qernel 
+                    @5jpg 
                     <span class="logo-eye">
                         <img src="{{ url_for('static', filename='eye.png') }}" alt="Eye" width="32" height="32">
                     </span>
@@ -332,7 +332,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            <p>Powered by <span class="accent">Qernel</span> | Advanced OSINT Investigation Platform</p>
+            <p>Powered by <span class="accent">@5jpg</span> | Advanced OSINT Investigation Platform</p>
         </div>
     </div>
 
@@ -382,16 +382,30 @@
             }
         }
 
-        // Enhanced notification system
+        // Enhanced notification system - FIXED for mobile
         function showNotification(message, duration = 3000) {
             const notification = document.getElementById('copyNotification');
             const notificationText = document.getElementById('copyNotificationText');
             
+            // Clear any existing timeout
+            if (notification.hideTimeout) {
+                clearTimeout(notification.hideTimeout);
+            }
+            
+            // Remove any existing show class first
+            notification.classList.remove('show');
+            
+            // Force reflow to ensure the class removal takes effect
+            notification.offsetHeight;
+            
+            // Set the message and show
             notificationText.textContent = message;
             notification.classList.add('show');
             
-            setTimeout(() => {
+            // Set timeout to hide
+            notification.hideTimeout = setTimeout(() => {
                 notification.classList.remove('show');
+                notification.hideTimeout = null;
             }, duration);
         }
 
@@ -796,7 +810,7 @@
             elements.tiktokResults.classList.add('visible');
         }
 
-        // Enhanced copy functionality
+        // Enhanced copy functionality - FIXED for mobile
         document.getElementById('copyUserIdBtn').addEventListener('click', async () => {
             const userId = document.getElementById('userIdText').textContent;
             try {
@@ -804,7 +818,23 @@
                 showNotification('User ID copied!');
             } catch (error) {
                 console.error('Copy failed:', error);
-                showNotification('Copy failed. Please try again.');
+                // Fallback for older browsers or failed clipboard access
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = userId;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showNotification('User ID copied!');
+                } catch (fallbackError) {
+                    console.error('Fallback copy failed:', fallbackError);
+                    showNotification('Copy failed. Please try again.');
+                }
             }
         });
 
