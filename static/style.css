@@ -646,7 +646,7 @@ body {
 
 .profile-header {
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   margin-bottom: 2rem;
   align-items: flex-start;
 }
@@ -656,11 +656,12 @@ body {
 }
 
 .profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  border: 2px solid var(--accent-primary);
+  border: 3px solid var(--accent-primary);
   object-fit: cover;
+  box-shadow: var(--shadow-glow);
 }
 
 .profile-info {
@@ -668,26 +669,26 @@ body {
 }
 
 .profile-nickname {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .profile-username {
   color: var(--text-secondary);
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
 }
 
 .profile-location,
 .profile-language {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .profile-location svg,
@@ -698,22 +699,23 @@ body {
 .profile-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
+  font-weight: 500;
 }
 
 .action-btn:hover {
@@ -737,18 +739,20 @@ body {
 .profile-about {
   background: var(--bg-secondary);
   border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
   color: var(--text-secondary);
   font-style: italic;
+  font-size: 1rem;
 }
 
 .profile-bio-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   margin-bottom: 2rem;
   color: var(--text-secondary);
+  font-size: 1rem;
 }
 
 .profile-bio-link svg {
@@ -772,25 +776,25 @@ body {
 .stats-section h3,
 .details-section h3 {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--border-primary);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
 }
 
 .stats-grid-tiktok {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
 }
 
 .stat-item {
   background: var(--bg-secondary);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -801,19 +805,19 @@ body {
 }
 
 .stat-value {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--accent-primary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -825,13 +829,13 @@ body {
 .detail-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 1rem;
+  padding: 1rem;
   background: var(--bg-secondary);
   border-radius: 8px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .detail-item svg {
@@ -843,8 +847,8 @@ body {
   margin-left: auto;
   background: none;
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
-  padding: 0.25rem;
+  border-radius: 6px;
+  padding: 0.5rem;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -855,24 +859,25 @@ body {
   color: var(--accent-primary);
 }
 
-.following-section {
-  text-align: center;
-}
-
-.following-btn {
-  background: var(--accent-primary);
+/* Copy notification */
+.copy-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--accent-success);
   color: white;
-  border: none;
+  padding: 1rem 1.5rem;
   border-radius: 8px;
-  padding: 0.75rem 2rem;
-  font-weight: 600;
-  cursor: pointer;
+  font-weight: 500;
+  z-index: 1000;
+  transform: translateX(100%);
+  opacity: 0;
   transition: all 0.3s ease;
 }
 
-.following-btn:hover {
-  background: var(--accent-secondary);
-  transform: translateY(-2px);
+.copy-notification.show {
+  transform: translateX(0);
+  opacity: 1;
 }
 
 /* Loading animations */
@@ -1016,6 +1021,7 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 1.5rem;
   }
   
   .profile-actions {
@@ -1025,6 +1031,19 @@ body {
   
   .stats-grid-tiktok {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .profile-nickname {
+    font-size: 1.5rem;
+  }
+
+  .profile-username {
+    font-size: 1rem;
   }
 }
 
@@ -1113,6 +1132,22 @@ body {
   .profile-actions {
     flex-direction: column;
     width: 100%;
+  }
+
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .profile-nickname {
+    font-size: 1.2rem;
+  }
+
+  .copy-notification {
+    top: 10px;
+    right: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
 }
 

@@ -181,21 +181,13 @@
                                 </div>
                             </div>
                             <div class="profile-actions">
-                                <button class="action-btn download-btn">
+                                <button class="action-btn download-btn" onclick="downloadAvatar()">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                         <polyline points="7,10 12,15 17,10"/>
                                         <line x1="12" y1="15" x2="12" y2="3"/>
                                     </svg>
                                     Download Avatar
-                                </button>
-                                <button class="action-btn stories-btn">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="3"/>
-                                        <path d="M12 1v6m0 6v6"/>
-                                        <path d="M1 12h6m6 0h6"/>
-                                    </svg>
-                                    View Stories
                                 </button>
                             </div>
                         </div>
@@ -312,10 +304,6 @@
                                 <span>Username Changed At: <span id="tiktok-username-changed">Unknown</span></span>
                             </div>
                         </div>
-
-                        <div class="following-section">
-                            <button class="following-btn">Show Following</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -324,6 +312,12 @@
             <p>Developed by <span class="accent">Radic</span> • @5jpg</p>
         </div>
     </div>
+
+    <!-- Copy notification -->
+    <div id="copy-notification" class="copy-notification">
+        User ID copied
+    </div>
+
     <script>
         let appState = {
             allResults: [],
@@ -681,7 +675,10 @@
             const element = document.getElementById(elementId);
             const text = element.textContent;
             navigator.clipboard.writeText(text).then(() => {
-                // Show feedback
+                // Show notification
+                showCopyNotification();
+                
+                // Show feedback on button
                 const btn = event.target.closest('.copy-btn');
                 const originalHTML = btn.innerHTML;
                 btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>';
@@ -689,6 +686,30 @@
                     btn.innerHTML = originalHTML;
                 }, 1000);
             });
+        }
+
+        function showCopyNotification() {
+            const notification = document.getElementById('copy-notification');
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        function downloadAvatar() {
+            const avatarImg = document.getElementById('tiktok-avatar');
+            const avatarUrl = avatarImg.src;
+            const username = document.getElementById('tiktok-username').textContent;
+            
+            if (avatarUrl && avatarUrl !== '') {
+                const link = document.createElement('a');
+                link.href = avatarUrl;
+                link.download = `${username}_avatar.jpg`;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         }
 
         function displayTikTokResults(data) {
