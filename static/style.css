@@ -1,4 +1,4 @@
-/* --- Unified copy notification for all devices --- */
+/* --- FIXED: Unified copy notification for all devices --- */
 .copy-notification {
   position: fixed;
   top: 20px;
@@ -9,27 +9,45 @@
   border-radius: 8px;
   font-weight: 500;
   font-size: 1rem;
-  z-index: 1000;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  z-index: 10000; /* Increased z-index */
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
   opacity: 0;
   pointer-events: none;
   transform: translateX(100%);
   transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  min-width: 200px;
+  text-align: center;
 }
+
 .copy-notification.show {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
 }
-@media (max-width: 600px) {
+
+@media (max-width: 768px) {
   .copy-notification {
-    top: 12px;
-    right: 12px;
-    font-size: 0.98rem;
-    padding: 0.7em 1.2em;
+    top: 15px;
+    right: 15px;
+    font-size: 0.95rem;
+    padding: 0.8rem 1.3rem;
     border-radius: 7px;
-    max-width: 90vw;
-    width: max-content;
+    max-width: calc(100vw - 30px);
+    width: auto;
+    min-width: 180px;
+    box-shadow: 0 3px 15px rgba(16, 185, 129, 0.5);
+  }
+}
+
+@media (max-width: 480px) {
+  .copy-notification {
+    top: 10px;
+    right: 10px;
+    font-size: 0.9rem;
+    padding: 0.7rem 1.1rem;
+    border-radius: 6px;
+    max-width: calc(100vw - 20px);
+    min-width: 160px;
   }
 }
 
@@ -58,7 +76,7 @@
   }
 }
 
-/* Logo eye next to Qernel */
+/* Logo eye next to @5jpg */
 .logo-eye {
   display: inline-block;
   vertical-align: middle;
@@ -279,7 +297,7 @@ body {
   height: 20px;
 }
 
-/* Tab Content */
+/* Tab Content - ENHANCED SMOOTH TRANSITIONS */
 .tab-content {
   display: none;
   opacity: 0;
@@ -291,6 +309,18 @@ body {
   display: block;
   opacity: 1;
   transform: translateY(0);
+  animation: slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Search form */
