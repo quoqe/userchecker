@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qernel - Advanced OSINT Username Intelligence</title>
+    <title>Qernel - OSINT</title>
     <meta name="description" content="Advanced OSINT username checker with real-time intelligence gathering across multiple platforms">
     <link rel="icon" href="{{ url_for('static', filename='eye.png') }}" type="image/x-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -12,21 +12,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Background particles -->
     <div class="bg-particles" id="particles"></div>
-    
-    <!-- Spotlight effect -->
     <div class="spotlight" id="spotlight"></div>
-    
     <div class="container">
         <div class="glass-card">
-            <!-- Header -->
             <div class="header">
-                <h1>Qernel</h1>
-                <p class="subtitle">Advanced OSINT Username Intelligence Platform</p>
+                <h1>
+                 <img src="{{ url_for('static', filename='eye.png') }}" alt="Qernel Eye" class="logo-eye" width="38" height="38" style="vertical-align: middle; margin-right: 0.5rem; filter: drop-shadow(0 2px 8px #00d4ff55);">
+                 Qernel
+                </h1>
+                <p class="subtitle">OSINT Username Intelligence Platform</p>
             </div>
-            
-            <!-- Search Form -->
             <form id="search-form" class="search-form" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
                 <input 
@@ -44,16 +40,12 @@
                     <div class="loading-spinner" style="display: none;"></div>
                 </button>
             </form>
-            
-            <!-- Progress Section -->
             <div id="progress-section" class="progress-section">
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
                 </div>
                 <div id="progress-text" class="progress-text">Initializing scan...</div>
             </div>
-            
-            <!-- Stats Grid -->
             <div id="stats-grid" class="stats-grid" style="display: none;">
                 <div class="stat-card">
                     <div id="total-found" class="stat-number">0</div>
@@ -72,26 +64,22 @@
                     <div class="stat-label">Scan Time</div>
                 </div>
             </div>
-            
-            <!-- Results Section -->
             <div id="results-section" class="results-section">
-                <!-- Filter Bar -->
                 <div id="filter-bar" class="filter-bar" style="display: none;">
+                    <span class="filter-icon" title="Filter Results" style="display: flex; align-items: center; margin-right: 0.5rem;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="4" y1="21" x2="20" y2="21"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                    </span>
                     <button type="button" class="filter-btn active" data-filter="all">All Results</button>
                     <button type="button" class="filter-btn" data-filter="found">Found</button>
                     <button type="button" class="filter-btn" data-filter="not-found">Not Found</button>
                     <button type="button" class="filter-btn" data-filter="error">Errors</button>
                 </div>
-                
-                <!-- Results Header -->
                 <div class="results-header" style="display: none;">
                     <h2 class="results-title">Intelligence Report</h2>
                     <div id="results-count" class="results-count">0 results</div>
                 </div>
-                
-                <!-- Results Table -->
-                <div id="results-table-container" class="results-table-container" style="display: none;">
-                    <table class="results-table">
+                <div id="results-table-container" class="results-table-container" style="display: none; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="results-table" style="min-width: 600px;">
                         <thead>
                             <tr>
                                 <th>Platform</th>
@@ -105,15 +93,11 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Footer -->
         <div class="footer">
-            <p>Developed by <span class="accent">Radic</span> • Advanced OSINT Intelligence Platform</p>
+            <p>Developed by <span class="accent">Radic</span> • @5jpg</p>
         </div>
     </div>
-
     <script>
-        // Application state
         let appState = {
             allResults: [],
             lastRenderedCount: 0,
@@ -122,8 +106,6 @@
             startTime: null,
             scanInterval: null
         };
-
-        // DOM elements
         const elements = {
             searchForm: document.getElementById('search-form'),
             searchBtn: document.getElementById('search-btn'),
@@ -145,234 +127,13 @@
             scanTime: document.getElementById('scan-time')
         };
 
-        // Initialize particles
-        function initParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 6 + 's';
-                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-
-        // Spotlight effect
-        function initSpotlight() {
-            const spotlight = document.getElementById('spotlight');
-            
-            document.addEventListener('mousemove', (e) => {
-                const x = e.clientX;
-                const y = e.clientY;
-                
-                spotlight.style.background = `radial-gradient(
-                    circle at ${x}px ${y}px,
-                    rgba(0, 212, 255, 0.15) 0%,
-                    rgba(124, 58, 237, 0.08) 30%,
-                    transparent 70%
-                )`;
-            });
-        }
-
-        // Update stats
-        function updateStats(results, progress, total) {
-            const found = results.filter(r => r.found === true).length;
-            const checked = progress;
-            const successRate = checked > 0 ? Math.round((found / checked) * 100) : 0;
-            
-            elements.totalFound.textContent = found;
-            elements.totalChecked.textContent = checked;
-            elements.successRate.textContent = successRate + '%';
-            
-            if (appState.startTime) {
-                const elapsed = Math.round((Date.now() - appState.startTime) / 1000);
-                elements.scanTime.textContent = elapsed + 's';
-            }
-        }
-
-        // Update progress
-        function updateProgress(progress, total, done) {
-            const percent = total > 0 ? Math.round((progress / total) * 100) : 0;
-            
-            elements.progressBar.style.width = percent + '%';
-            
-            if (done) {
-                elements.progressText.textContent = `Scan complete • ${progress}/${total} platforms analyzed`;
-                clearInterval(appState.scanInterval);
-            } else {
-                elements.progressText.textContent = `Analyzing platforms • ${progress}/${total} complete`;
-            }
-        }
-
-        // Render results table
-        function renderResults(results) {
-            const tbody = elements.resultsTbody;
-            
-            // Add new results
-            for (let i = appState.lastRenderedCount; i < results.length; i++) {
-                const result = results[i];
-                const row = document.createElement('tr');
-                row.className = 'fade-in';
-                
-                let statusClass, statusText;
-                if (result.found === true) {
-                    statusClass = 'found';
-                    statusText = 'Found';
-                } else if (result.found === false) {
-                    statusClass = 'not-found';
-                    statusText = 'Not Found';
-                } else {
-                    statusClass = 'error';
-                    statusText = 'Error';
-                }
-                
-                row.innerHTML = `
-                    <td><strong>${escapeHtml(result.site)}</strong></td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td><span class="category-badge">${escapeHtml(result.category || 'misc')}</span></td>
-                    <td><a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer" class="result-link">View Profile</a></td>
-                `;
-                
-                tbody.appendChild(row);
-            }
-            
-            appState.lastRenderedCount = results.length;
-            
-            // Update results count
-            const filteredCount = getFilteredResults().length;
-            elements.resultsCount.textContent = `${filteredCount} result${filteredCount !== 1 ? 's' : ''}`;
-        }
-
-        // Filter results
-        function getFilteredResults() {
-            switch (appState.currentFilter) {
-                case 'found':
-                    return appState.allResults.filter(r => r.found === true);
-                case 'not-found':
-                    return appState.allResults.filter(r => r.found === false);
-                case 'error':
-                    return appState.allResults.filter(r => r.found === null);
-                default:
-                    return appState.allResults;
-            }
-        }
-
-        // Apply filter
-        function applyFilter(filter) {
-            appState.currentFilter = filter;
-            
-            // Update filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === filter);
-            });
-            
-            // Re-render table
-            elements.resultsTbody.innerHTML = '';
-            appState.lastRenderedCount = 0;
-            renderResults(getFilteredResults());
-        }
-
-        // Escape HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Show/hide sections
-        function showSection(element) {
-            element.style.display = 'block';
-            setTimeout(() => element.classList.add('visible'), 10);
-        }
-
-        function hideSection(element) {
-            element.classList.remove('visible');
-            setTimeout(() => element.style.display = 'none', 500);
-        }
-
-        // Reset UI
-        function resetUI() {
-            appState.allResults = [];
-            appState.lastRenderedCount = 0;
-            appState.currentFilter = 'all';
-            
-            elements.progressBar.style.width = '0%';
-            elements.progressText.textContent = 'Initializing scan...';
-            elements.resultsTbody.innerHTML = '';
-            
-            hideSection(elements.progressSection);
-            hideSection(elements.resultsSection);
-            elements.statsGrid.style.display = 'none';
-            elements.filterBar.style.display = 'none';
-            elements.resultsHeader.style.display = 'none';
-            elements.resultsTableContainer.style.display = 'none';
-            
-            // Reset filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === 'all');
-            });
-        }
-
-        // Poll progress
-        function pollProgress(jobId) {
-            fetch(`/progress/${jobId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        elements.progressText.textContent = data.error;
-                        setSearchState(false);
-                        return;
-                    }
-                    
-                    // Update progress
-                    updateProgress(data.progress, data.total, data.done);
-                    
-                    // Update results
-                    if (data.results && data.results.length > 0) {
-                        appState.allResults = data.results;
-                        
-                        // Show results section if not visible
-                        if (!elements.resultsSection.classList.contains('visible')) {
-                            showSection(elements.resultsSection);
-                            elements.statsGrid.style.display = 'grid';
-                            elements.filterBar.style.display = 'flex';
-                            elements.resultsHeader.style.display = 'flex';
-                            elements.resultsTableContainer.style.display = 'block';
-                        }
-                        
-                        renderResults(getFilteredResults());
-                        updateStats(data.results, data.progress, data.total);
-                    }
-                    
-                    // Continue polling or finish
-                    if (!data.done) {
-                        setTimeout(() => pollProgress(jobId), 500);
-                    } else {
-                        setSearchState(false);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error polling progress:', error);
-                    elements.progressText.textContent = 'Network error occurred';
-                    setSearchState(false);
-                });
-        }
-
-        // Set search state
         function setSearchState(searching) {
             appState.searchRunning = searching;
             elements.searchBtn.disabled = searching;
-            
             if (searching) {
                 elements.btnText.style.display = 'none';
                 elements.loadingSpinner.style.display = 'inline-block';
                 appState.startTime = Date.now();
-                
-                // Start scan time counter
                 appState.scanInterval = setInterval(() => {
                     if (appState.startTime) {
                         const elapsed = Math.round((Date.now() - appState.startTime) / 1000);
@@ -386,37 +147,180 @@
             }
         }
 
-        // Form submission
+        function resetUI() {
+            appState.allResults = [];
+            appState.lastRenderedCount = 0;
+            appState.currentFilter = 'all';
+            elements.progressBar.style.width = '0%';
+            elements.progressText.textContent = 'Initializing scan...';
+            elements.resultsTbody.innerHTML = '';
+            hideSection(elements.resultsSection);
+            elements.statsGrid.style.display = 'none';
+            elements.filterBar.style.display = 'none';
+            elements.resultsHeader.style.display = 'none';
+            elements.resultsTableContainer.style.display = 'none';
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === 'all');
+            });
+        }
+
+        function showSection(element) {
+            element.classList.add('visible');
+        }
+        function hideSection(element) {
+            element.classList.remove('visible');
+        }
+
+        function pollProgress(jobId) {
+            fetch(`/progress/${jobId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        elements.progressText.textContent = data.error;
+                        setSearchState(false);
+                        // Do NOT hide the progress section!
+                        return;
+                    }
+                    updateProgress(data.progress, data.total, data.done);
+                    if (data.results && data.results.length > 0) {
+                        appState.allResults = data.results;
+                        if (!elements.resultsSection.classList.contains('visible')) {
+                            showSection(elements.resultsSection);
+                            elements.statsGrid.style.display = 'grid';
+                            elements.filterBar.style.display = 'flex';
+                            elements.resultsHeader.style.display = 'flex';
+                            elements.resultsTableContainer.style.display = 'block';
+                        }
+                        renderResults(getFilteredResults());
+                        updateStats(data.results, data.progress, data.total);
+                    }
+                    if (!data.done) {
+                        setTimeout(() => pollProgress(jobId), 500);
+                    } else {
+                        setSearchState(false);
+                        // keep the progress section visible
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling progress:', error);
+                    elements.progressText.textContent = 'Network error occurred';
+                    setSearchState(false);
+                    // Do NOT hide the progress section!
+                });
+        }
+
+        function updateStats(results, progress, total) {
+            const found = results.filter(r => r.found === true).length;
+            const checked = progress;
+            const successRate = checked > 0 ? Math.round((found / checked) * 100) : 0;
+            elements.totalFound.textContent = found;
+            elements.totalChecked.textContent = checked;
+            elements.successRate.textContent = successRate + '%';
+            if (appState.startTime) {
+                const elapsed = Math.round((Date.now() - appState.startTime) / 1000);
+                elements.scanTime.textContent = elapsed + 's';
+            }
+        }
+
+        function updateProgress(progress, total, done) {
+            const percent = total > 0 ? Math.round((progress / total) * 100) : 0;
+            elements.progressBar.style.width = percent + '%';
+            if (done) {
+                elements.progressText.textContent = `Scan complete • ${progress}/${total} platforms analyzed`;
+                clearInterval(appState.scanInterval);
+            } else {
+                elements.progressText.textContent = `Analyzing platforms • ${progress}/${total} complete`;
+            }
+        }
+
+        function renderResults(results) {
+            const tbody = elements.resultsTbody;
+            for (let i = appState.lastRenderedCount; i < results.length; i++) {
+                const result = results[i];
+                const row = document.createElement('tr');
+                row.className = 'fade-in';
+                let statusClass, statusText;
+                if (result.found === true) {
+                    statusClass = 'found';
+                    statusText = 'Found';
+                } else if (result.found === false) {
+                    statusClass = 'not-found';
+                    statusText = 'Not Found';
+                } else {
+                    statusClass = 'error';
+                    statusText = 'Error';
+                }
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(result.site)}</strong></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td><span class="category-badge">${escapeHtml(result.category || 'misc')}</span></td>
+                    <td><a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer" class="result-link">View Profile</a></td>
+                `;
+                tbody.appendChild(row);
+            }
+            appState.lastRenderedCount = results.length;
+            const filteredCount = getFilteredResults().length;
+            elements.resultsCount.textContent = `${filteredCount} result${filteredCount !== 1 ? 's' : ''}`;
+        }
+
+        function getFilteredResults() {
+            switch (appState.currentFilter) {
+                case 'found':
+                    return appState.allResults.filter(r => r.found === true);
+                case 'not-found':
+                    return appState.allResults.filter(r => r.found === false);
+                case 'error':
+                    return appState.allResults.filter(r => r.found === null);
+                default:
+                    return appState.allResults;
+            }
+        }
+
+        function applyFilter(filter) {
+            appState.currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            elements.resultsTbody.innerHTML = '';
+            appState.lastRenderedCount = 0;
+            renderResults(getFilteredResults());
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         elements.searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
             if (appState.searchRunning) return;
-            
+            elements.searchBtn.disabled = true;
+            setTimeout(() => { elements.searchBtn.blur(); }, 50);
             const username = this.username.value.trim();
-            if (!username) return;
-            
-            // Validate username format
-            if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
-                alert('Username can only contain letters, numbers, dots, underscores, and hyphens');
+            if (!username) {
+                setSearchState(false);
                 return;
             }
-            
+            if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+                alert('Username can only contain letters, numbers, dots, underscores, and hyphens');
+                setSearchState(false);
+                return;
+            }
             resetUI();
-            setSearchState(true);
             showSection(elements.progressSection);
-            
+            setSearchState(true);
             const formData = new FormData(this);
-            
             fetch('/start_check', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                if (data.job_id) {
+                if (data && data.job_id) {
                     pollProgress(data.job_id);
                 } else {
-                    elements.progressText.textContent = data.error || 'Error occurred';
+                    elements.progressText.textContent = (data && data.error) || 'Error occurred';
                     setSearchState(false);
                 }
             })
@@ -427,14 +331,39 @@
             });
         });
 
-        // Filter button events
         elements.filterBar.addEventListener('click', function(e) {
             if (e.target.classList.contains('filter-btn')) {
                 applyFilter(e.target.dataset.filter);
             }
         });
 
-        // Initialize
+        function initParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        function initSpotlight() {
+            const spotlight = document.getElementById('spotlight');
+            document.addEventListener('mousemove', (e) => {
+                const x = e.clientX;
+                const y = e.clientY;
+                spotlight.style.background = `radial-gradient(
+                    circle at ${x}px ${y}px,
+                    rgba(0, 212, 255, 0.15) 0%,
+                    rgba(124, 58, 237, 0.08) 30%,
+                    transparent 70%
+                )`;
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             initParticles();
             initSpotlight();

@@ -1,6 +1,5 @@
 import json
 import httpx
-import uuid
 import asyncio
 import threading
 import time
@@ -8,40 +7,25 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, request, jsonify, session
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_talisman import Talisman
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 import secrets
-import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime
 
 def create_app():
     app = Flask(__name__)
-    
+
     # Load configuration
     config_name = os.environ.get('FLASK_ENV', 'development')
     app.config.from_object(config[config_name])
-    
+
     # Security middleware
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-    
-    # No Flask-Talisman or CSP, allow Cloudflare to handle security headers
-    
-    # Rate limiting
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        storage_uri=app.config['RATELIMIT_STORAGE_URL'],
-        default_limits=[app.config['RATELIMIT_DEFAULT']]
-    )
-    
+
     # Logging setup
     if not app.debug:
         if not os.path.exists('logs'):
             os.mkdir('logs')
-        
         file_handler = RotatingFileHandler('logs/osint_app.log', maxBytes=10240000, backupCount=10)
         file_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -50,7 +34,7 @@ def create_app():
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
         app.logger.info('OSINT Username Checker startup')
-    
+
     # Load sites data
     try:
         with open('wmn-data.json', 'r', encoding='utf-8') as f:
@@ -58,11 +42,11 @@ def create_app():
     except FileNotFoundError:
         app.logger.error("wmn-data.json not found")
         SITES = {"sites": []}
-    
+
     # Global storage
     progress_store = {}
     progress_store_lock = threading.Lock()
-    
+
     # IP logging
     ip_logger = logging.getLogger("ip_logger")
     ip_logger.setLevel(logging.INFO)
@@ -70,29 +54,24 @@ def create_app():
     ip_file_handler.setLevel(logging.INFO)
     ip_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
     ip_logger.addHandler(ip_file_handler)
-    
+
     def get_client_ip():
-        """Securely get client IP address"""
-        return request.headers.get('CF-Connecting-IP', 
-               request.headers.get('X-Forwarded-For', 
+        return request.headers.get('CF-Connecting-IP',
+               request.headers.get('X-Forwarded-For',
                request.headers.get('X-Real-IP', request.remote_addr)))
-    
+
     def sanitize_username(username):
-        """Sanitize username input"""
         if not username or len(username) > 50:
             return None
-        # Allow only alphanumeric, underscore, dash, and dot
         import re
         if not re.match(r'^[a-zA-Z0-9._-]+$', username):
             return None
         return username.strip()
-    
+
     def generate_job_id():
-        """Generate secure job ID"""
         return secrets.token_urlsafe(32)
-    
+
     def cleanup_progress_store():
-        """Clean up expired jobs"""
         while True:
             try:
                 now = time.time()
@@ -104,52 +83,38 @@ def create_app():
                 time.sleep(60)
             except Exception as e:
                 app.logger.error(f"Error in cleanup thread: {e}")
-    
-    # Start cleanup thread
+
     cleanup_thread = threading.Thread(target=cleanup_progress_store, daemon=True)
     cleanup_thread.start()
-    
+
     @app.route('/', methods=['GET'])
     def index():
-        """Main page"""
-        # Generate CSRF token
         if 'csrf_token' not in session:
             session['csrf_token'] = secrets.token_hex(16)
         return render_template('index.html')
-    
+
     @app.route('/start_check', methods=['POST'])
-    @limiter.limit("3 per minute")
     def start_check():
-        """Start username check with enhanced security"""
         try:
-            # CSRF protection
             csrf_token = request.form.get('csrf_token')
             if not csrf_token or csrf_token != session.get('csrf_token'):
                 return jsonify({'error': 'Invalid CSRF token'}), 403
-            
-            # Input validation
+
             username = request.form.get('username', '').strip()
             username = sanitize_username(username)
-            
             if not username:
                 return jsonify({'error': 'Invalid username format'}), 400
-            
-            # Rate limiting by IP
+
             client_ip = get_client_ip()
-            
-            # Log request (no encryption)
             ip_logger.info(f"{client_ip} {username}")
-            
-            # Generate secure job ID
+
             job_id = generate_job_id()
             total_sites = sum(1 for site in SITES.get('sites', []) if site.get('uri_check'))
-            
-            # Session management
+
             owner = session.get('job_owner_id', secrets.token_urlsafe(16))
             session['job_owner_id'] = owner
             session.permanent = True
-            
-            # Store job data
+
             with progress_store_lock:
                 progress_store[job_id] = {
                     'progress': 0,
@@ -161,55 +126,49 @@ def create_app():
                     'username': username,
                     'ip': client_ip
                 }
-            
-            # Start background task
+
             threading.Thread(
-                target=lambda: asyncio.run(run_check(username, job_id)), 
+                target=lambda: asyncio.run(run_check(username, job_id)),
                 daemon=True
             ).start()
-            
+
             return jsonify({'job_id': job_id, 'total': total_sites})
-            
+
         except Exception as e:
             app.logger.error(f"Error in start_check: {e}")
             return jsonify({'error': 'Internal server error'}), 500
-    
+
     async def run_check(username, job_id):
-        """Run the username check asynchronously"""
         try:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
             timeout = httpx.Timeout(
-                app.config['REQUEST_TIMEOUT'], 
-                connect=app.config['REQUEST_TIMEOUT'], 
-                read=app.config['REQUEST_TIMEOUT'], 
-                write=app.config['REQUEST_TIMEOUT'], 
+                app.config['REQUEST_TIMEOUT'],
+                connect=app.config['REQUEST_TIMEOUT'],
+                read=app.config['REQUEST_TIMEOUT'],
+                write=app.config['REQUEST_TIMEOUT'],
                 pool=app.config['REQUEST_TIMEOUT']
             )
             semaphore = asyncio.Semaphore(app.config['MAX_CONCURRENT_REQUESTS'])
-            
+
             async with httpx.AsyncClient(
-                http2=True, 
-                timeout=timeout, 
+                http2=True,
+                timeout=timeout,
                 follow_redirects=False,
                 limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
             ) as client:
-                
+
                 async def check_site(site):
                     async with semaphore:
                         try:
                             url = site.get('uri_pretty', site['uri_check']).replace('{account}', username)
                             check_url = site['uri_check'].replace('{account}', username)
-                            
-                            # Make request
                             resp = await client.get(check_url, headers=headers)
-                            
-                            # Determine if found
                             found = None
                             e_string = site.get('e_string', '').replace('{account}', username) if 'e_string' in site else None
                             m_string = site.get('m_string', '').replace('{account}', username) if 'm_string' in site else None
-                            
+
                             if 'e_code' in site and resp.status_code == int(site['e_code']):
                                 if e_string:
                                     found = e_string in resp.text
@@ -231,8 +190,7 @@ def create_app():
                                     found = False
                                 if found is None:
                                     found = False
-                            
-                            # Store result
+
                             with progress_store_lock:
                                 if job_id in progress_store:
                                     progress_store[job_id]['results'].append({
@@ -242,7 +200,7 @@ def create_app():
                                         'category': site.get('cat', 'misc')
                                     })
                                     progress_store[job_id]['progress'] += 1
-                                    
+
                         except Exception as e:
                             app.logger.warning(f"Exception checking {site.get('name', 'Unknown')}: {e}")
                             with progress_store_lock:
@@ -254,37 +212,30 @@ def create_app():
                                         'category': site.get('cat', 'misc')
                                     })
                                     progress_store[job_id]['progress'] += 1
-                
-                # Execute all checks
+
                 tasks = [check_site(site) for site in SITES.get('sites', []) if site.get('uri_check')]
                 await asyncio.gather(*tasks, return_exceptions=True)
-                
-            # Mark as done
+
             with progress_store_lock:
                 if job_id in progress_store:
                     progress_store[job_id]['done'] = True
-                    
+
         except Exception as e:
             app.logger.error(f"Error in run_check: {e}")
             with progress_store_lock:
                 if job_id in progress_store:
                     progress_store[job_id]['done'] = True
                     progress_store[job_id]['error'] = 'Check failed'
-    
+
     @app.route('/progress/<job_id>')
-    @limiter.limit("30 per minute")
     def progress(job_id):
-        """Get progress for a job"""
         try:
             owner = session.get('job_owner_id')
-            
             with progress_store_lock:
                 data = progress_store.get(job_id)
                 if not data or data.get('owner') != owner:
                     return jsonify({'error': 'Invalid or unauthorized job id'}), 404
-                
                 percent = int(100 * data['progress'] / data['total']) if data['total'] else 100
-                
                 return jsonify({
                     'progress': data['progress'],
                     'total': data['total'],
@@ -293,28 +244,22 @@ def create_app():
                     'results': data['results'],
                     'error': data.get('error')
                 })
-                
         except Exception as e:
             app.logger.error(f"Error in progress: {e}")
             return jsonify({'error': 'Internal server error'}), 500
-    
+
     @app.route('/health')
     def health():
-        """Health check endpoint"""
         return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
-    
+
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({'error': 'Not found'}), 404
-    
+
     @app.errorhandler(500)
     def internal_error(error):
         return jsonify({'error': 'Internal server error'}), 500
-    
-    @app.errorhandler(429)
-    def ratelimit_handler(e):
-        return jsonify({'error': 'Rate limit exceeded'}), 429
-    
+
     return app
 
 if __name__ == '__main__':

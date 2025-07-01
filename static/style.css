@@ -1,3 +1,24 @@
+/* Logo eye next to Qernel */
+.logo-eye {
+  display: inline-block;
+  vertical-align: middle;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 2px 8px #00d4ff55);
+  animation: eyePop 1.2s cubic-bezier(.4,0,.2,1);
+}
+@keyframes eyePop {
+  0% { opacity: 0; transform: scale(0.7) translateY(-10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.filter-icon svg {
+  display: inline-block;
+  margin-bottom: -2px;
+  filter: drop-shadow(0 1px 4px #00d4ff33);
+  transition: stroke 0.2s;
+}
+.filter-icon:hover svg {
+  stroke: #7c3aed;
+}
 /* Modern Cybersecurity Theme */
 :root {
   --bg-primary: #0a0a0f;
@@ -45,7 +66,12 @@ body, html {
 }
 
 body {
-  background-image: var(--gradient-bg);
+  background-color: var(--bg-primary);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,212,255,0.07) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, rgba(0,212,255,0.07) 0 1px, transparent 1px 32px),
+    var(--gradient-bg);
+  background-size: 32px 32px, 32px 32px, cover;
   background-attachment: fixed;
 }
 
@@ -218,15 +244,27 @@ body {
   left: 100%;
 }
 
-/* Progress section */
 .progress-section {
-  margin-bottom: 2rem;
+  display: none;
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.5s ease;
 }
-
 .progress-section.visible {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Results section - same logic for consistency */
+.results-section {
+  display: none;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s ease;
+}
+.results-section.visible {
+  display: block;
   opacity: 1;
   transform: translateY(0);
 }
@@ -529,56 +567,150 @@ body {
 }
 
 /* Responsive design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .container {
-    margin: 1rem auto;
+    max-width: 98vw;
     padding: 0 0.5rem;
   }
-  
   .glass-card {
-    padding: 1.5rem;
+    padding: 1.2rem;
   }
-  
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 100vw;
+    margin: 0.5rem auto;
+    padding: 0 0.2rem;
+  }
+  .glass-card {
+    padding: 0.8rem;
+    border-radius: 14px;
+  }
   .header h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
-  
   .search-form {
     flex-direction: column;
+    gap: 0.5rem;
   }
-  
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
   }
-  
+  .stat-card {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
   .filter-bar {
+    flex-wrap: wrap;
+    gap: 0.3rem;
     justify-content: flex-start;
   }
-  
+  .filter-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
   .results-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
-  .results-table {
-    font-size: 0.9rem;
+  .results-table-container {
+    border-radius: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  
+  .results-table {
+    font-size: 0.92rem;
+    min-width: 520px;
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
   .results-table th,
   .results-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.92rem;
+  }
+  .results-table th,
+  .results-table td {
+    min-width: 90px;
+  }
+  .result-link {
+    word-break: break-all;
+    font-size: 0.92rem;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 540px) {
+  .container {
+    max-width: 100vw;
+    padding: 0 0.1rem;
+  }
+  .glass-card {
+    padding: 0.5rem;
+    border-radius: 10px;
+  }
+  .header h1 {
+    font-size: 1.1rem;
+  }
+  .subtitle {
+    font-size: 0.95rem;
+  }
+  .search-form {
+    gap: 0.3rem;
+  }
   .stats-grid {
     grid-template-columns: 1fr;
+    gap: 0.3rem;
   }
-  
+  .stat-card {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
+  .filter-bar {
+    gap: 0.2rem;
+  }
   .filter-btn {
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 0.7rem;
     font-size: 0.8rem;
+  }
+  .results-header {
+    font-size: 1rem;
+  }
+  .results-table-container {
+    border-radius: 6px;
+    margin: 0 -0.5rem 1em -0.5rem;
+    width: 100vw;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: none;
+  }
+  .results-table {
+    font-size: 0.92rem;
+    min-width: 600px;
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .results-table th,
+  .results-table td {
+    padding: 0.35em 0.4em;
+    font-size: 0.92rem;
+    min-width: 80px;
+    white-space: nowrap;
+  }
+  .result-link {
+    font-size: 0.92rem;
+    word-break: break-all;
+    max-width: 120px;
+    min-width: 90px;
+    display: inline-block;
+    text-align: center;
   }
 }
 
