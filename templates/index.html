@@ -21,86 +21,302 @@
                  <img src="{{ url_for('static', filename='eye.png') }}" alt="Qernel Eye" class="logo-eye" width="38" height="38" style="vertical-align: middle; margin-right: 0.5rem; filter: drop-shadow(0 2px 8px #00d4ff55);">
                  Qernel
                 </h1>
-                <p class="subtitle">OSINT Username Intelligence Platform</p>
+                <p class="subtitle">OSINT Intelligence Platform</p>
             </div>
-            <form id="search-form" class="search-form" autocomplete="off">
-                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
-                <input 
-                    type="text" 
-                    name="username" 
-                    class="search-input" 
-                    placeholder="Enter target username..." 
-                    required 
-                    maxlength="50"
-                    pattern="[a-zA-Z0-9._-]+"
-                    title="Username can only contain letters, numbers, dots, underscores, and hyphens"
-                >
-                <button type="submit" id="search-btn" class="search-btn">
-                    <span class="btn-text">Analyze</span>
-                    <div class="loading-spinner" style="display: none;"></div>
-                </button>
-            </form>
-            <div id="rate-limit-warning" class="rate-limit-warning" style="display: none;">
-                <div class="warning-content">
+
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="username">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
                     </svg>
-                    <span id="rate-limit-message">Rate limit exceeded. Please wait before trying again.</span>
-                    <div id="rate-limit-countdown" class="countdown"></div>
+                    Username Checker
+                </button>
+                <button class="tab-btn" data-tab="tiktok">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+                    </svg>
+                    TikTok Checker
+                </button>
+            </div>
+
+            <!-- Username Checker Tab -->
+            <div id="username-tab" class="tab-content active">
+                <form id="search-form" class="search-form" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                    <input 
+                        type="text" 
+                        name="username" 
+                        class="search-input" 
+                        placeholder="Enter target username..." 
+                        required 
+                        maxlength="50"
+                        pattern="[a-zA-Z0-9._-]+"
+                        title="Username can only contain letters, numbers, dots, underscores, and hyphens"
+                    >
+                    <button type="submit" id="search-btn" class="search-btn">
+                        <span class="btn-text">Analyze</span>
+                        <div class="loading-spinner" style="display: none;"></div>
+                    </button>
+                </form>
+                <div id="rate-limit-warning" class="rate-limit-warning" style="display: none;">
+                    <div class="warning-content">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span id="rate-limit-message">Rate limit exceeded. Please wait before trying again.</span>
+                        <div id="rate-limit-countdown" class="countdown"></div>
+                    </div>
+                </div>
+                <div id="progress-section" class="progress-section">
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">Initializing scan...</div>
+                </div>
+                <div id="stats-grid" class="stats-grid" style="display: none;">
+                    <div class="stat-card">
+                        <div id="total-found" class="stat-number">0</div>
+                        <div class="stat-label">Found</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="total-checked" class="stat-number">0</div>
+                        <div class="stat-label">Checked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="success-rate" class="stat-number">0%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="scan-time" class="stat-number">0s</div>
+                        <div class="stat-label">Scan Time</div>
+                    </div>
+                </div>
+                <div id="results-section" class="results-section">
+                    <div id="filter-bar" class="filter-bar" style="display: none;">
+                        <span class="filter-icon" title="Filter Results" style="display: flex; align-items: center; margin-right: 0.5rem;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="4" y1="21" x2="20" y2="21"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                        </span>
+                        <button type="button" class="filter-btn active" data-filter="all">All Results</button>
+                        <button type="button" class="filter-btn" data-filter="found">Found</button>
+                        <button type="button" class="filter-btn" data-filter="not-found">Not Found</button>
+                        <button type="button" class="filter-btn" data-filter="error">Errors</button>
+                    </div>
+                    <div class="results-header" style="display: none;">
+                        <h2 class="results-title">Intelligence Report</h2>
+                        <div id="results-count" class="results-count">0 results</div>
+                    </div>
+                    <div id="results-table-container" class="results-table-container" style="display: none; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table class="results-table" style="min-width: 600px;">
+                            <thead>
+                                <tr>
+                                    <th>Platform</th>
+                                    <th>Status</th>
+                                    <th>Category</th>
+                                    <th>Profile</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <div id="progress-section" class="progress-section">
-                <div class="progress-bar-container">
-                    <div id="progress-bar" class="progress-bar"></div>
+
+            <!-- TikTok Checker Tab -->
+            <div id="tiktok-tab" class="tab-content">
+                <form id="tiktok-form" class="search-form" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                    <input 
+                        type="text" 
+                        name="username" 
+                        class="search-input" 
+                        placeholder="Enter TikTok username..." 
+                        required 
+                        maxlength="50"
+                        pattern="[a-zA-Z0-9._-]+"
+                        title="Username can only contain letters, numbers, dots, underscores, and hyphens"
+                    >
+                    <button type="submit" id="tiktok-btn" class="search-btn">
+                        <span class="btn-text">Fetch Data</span>
+                        <div class="loading-spinner" style="display: none;"></div>
+                    </button>
+                </form>
+                <div id="tiktok-rate-limit-warning" class="rate-limit-warning" style="display: none;">
+                    <div class="warning-content">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span id="tiktok-rate-limit-message">Rate limit exceeded. Please wait before trying again.</span>
+                        <div id="tiktok-rate-limit-countdown" class="countdown"></div>
+                    </div>
                 </div>
-                <div id="progress-text" class="progress-text">Initializing scan...</div>
-            </div>
-            <div id="stats-grid" class="stats-grid" style="display: none;">
-                <div class="stat-card">
-                    <div id="total-found" class="stat-number">0</div>
-                    <div class="stat-label">Found</div>
-                </div>
-                <div class="stat-card">
-                    <div id="total-checked" class="stat-number">0</div>
-                    <div class="stat-label">Checked</div>
-                </div>
-                <div class="stat-card">
-                    <div id="success-rate" class="stat-number">0%</div>
-                    <div class="stat-label">Success Rate</div>
-                </div>
-                <div class="stat-card">
-                    <div id="scan-time" class="stat-number">0s</div>
-                    <div class="stat-label">Scan Time</div>
-                </div>
-            </div>
-            <div id="results-section" class="results-section">
-                <div id="filter-bar" class="filter-bar" style="display: none;">
-                    <span class="filter-icon" title="Filter Results" style="display: flex; align-items: center; margin-right: 0.5rem;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="4" y1="21" x2="20" y2="21"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-                    </span>
-                    <button type="button" class="filter-btn active" data-filter="all">All Results</button>
-                    <button type="button" class="filter-btn" data-filter="found">Found</button>
-                    <button type="button" class="filter-btn" data-filter="not-found">Not Found</button>
-                    <button type="button" class="filter-btn" data-filter="error">Errors</button>
-                </div>
-                <div class="results-header" style="display: none;">
-                    <h2 class="results-title">Intelligence Report</h2>
-                    <div id="results-count" class="results-count">0 results</div>
-                </div>
-                <div id="results-table-container" class="results-table-container" style="display: none; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table class="results-table" style="min-width: 600px;">
-                        <thead>
-                            <tr>
-                                <th>Platform</th>
-                                <th>Status</th>
-                                <th>Category</th>
-                                <th>Profile</th>
-                            </tr>
-                        </thead>
-                        <tbody id="results-tbody"></tbody>
-                    </table>
+                <div id="tiktok-results" class="tiktok-results" style="display: none;">
+                    <div class="tiktok-profile-card">
+                        <div class="profile-header">
+                            <div class="avatar-container">
+                                <img id="tiktok-avatar" src="" alt="Profile Avatar" class="profile-avatar">
+                            </div>
+                            <div class="profile-info">
+                                <h2 id="tiktok-nickname" class="profile-nickname">Username</h2>
+                                <p id="tiktok-username" class="profile-username">@username</p>
+                                <div class="profile-location">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    <span id="tiktok-country">Country</span>
+                                </div>
+                                <div class="profile-language">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M2 12h20"/>
+                                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                    </svg>
+                                    <span id="tiktok-language">Language</span>
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button class="action-btn download-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7,10 12,15 17,10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Download Avatar
+                                </button>
+                                <button class="action-btn stories-btn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="3"/>
+                                        <path d="M12 1v6m0 6v6"/>
+                                        <path d="M1 12h6m6 0h6"/>
+                                    </svg>
+                                    View Stories
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-about">
+                            <p id="tiktok-about">User has no about</p>
+                        </div>
+                        
+                        <div class="profile-bio-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                            <span id="tiktok-bio-link">No bio link available</span>
+                        </div>
+
+                        <div class="stats-section">
+                            <h3>STATS</h3>
+                            <div class="stats-grid-tiktok">
+                                <div class="stat-item">
+                                    <div id="tiktok-followers" class="stat-value">0</div>
+                                    <div class="stat-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                        </svg>
+                                        Followers
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div id="tiktok-following" class="stat-value">0</div>
+                                    <div class="stat-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <line x1="19" y1="8" x2="19" y2="14"/>
+                                            <line x1="22" y1="11" x2="16" y2="11"/>
+                                        </svg>
+                                        Following
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div id="tiktok-hearts" class="stat-value">0</div>
+                                    <div class="stat-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                        </svg>
+                                        Hearts
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div id="tiktok-videos" class="stat-value">0</div>
+                                    <div class="stat-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="23 7 16 12 23 17 23 7"/>
+                                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                        </svg>
+                                        Videos
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <div id="tiktok-friends" class="stat-value">0</div>
+                                    <div class="stat-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                        </svg>
+                                        Friends
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="details-section">
+                            <h3>DETAILS</h3>
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span>User ID: <span id="tiktok-user-id">Unknown</span></span>
+                                <button class="copy-btn" onclick="copyToClipboard('tiktok-user-id')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                                <span>Created: <span id="tiktok-created">Unknown</span></span>
+                            </div>
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                <span>Nickname Edited At: <span id="tiktok-nickname-edited">Unknown</span></span>
+                            </div>
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span>Username Changed At: <span id="tiktok-username-changed">Unknown</span></span>
+                            </div>
+                        </div>
+
+                        <div class="following-section">
+                            <button class="following-btn">Show Following</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -117,7 +333,10 @@
             startTime: null,
             scanInterval: null,
             rateLimitCountdown: null,
-            rateLimitEndTime: null
+            rateLimitEndTime: null,
+            tiktokRateLimitCountdown: null,
+            tiktokRateLimitEndTime: null,
+            tiktokSearchRunning: false
         };
         const elements = {
             searchForm: document.getElementById('search-form'),
@@ -140,8 +359,35 @@
             scanTime: document.getElementById('scan-time'),
             rateLimitWarning: document.getElementById('rate-limit-warning'),
             rateLimitMessage: document.getElementById('rate-limit-message'),
-            rateLimitCountdown: document.getElementById('rate-limit-countdown')
+            rateLimitCountdown: document.getElementById('rate-limit-countdown'),
+            // TikTok elements
+            tiktokForm: document.getElementById('tiktok-form'),
+            tiktokBtn: document.getElementById('tiktok-btn'),
+            tiktokResults: document.getElementById('tiktok-results'),
+            tiktokRateLimitWarning: document.getElementById('tiktok-rate-limit-warning'),
+            tiktokRateLimitMessage: document.getElementById('tiktok-rate-limit-message'),
+            tiktokRateLimitCountdown: document.getElementById('tiktok-rate-limit-countdown')
         };
+
+        // Tab functionality
+        function initTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetTab = btn.dataset.tab;
+                    
+                    // Remove active class from all tabs and contents
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    btn.classList.add('active');
+                    document.getElementById(`${targetTab}-tab`).classList.add('active');
+                });
+            });
+        }
 
         function setSearchState(searching) {
             appState.searchRunning = searching;
@@ -163,6 +409,21 @@
             }
         }
 
+        function setTikTokSearchState(searching) {
+            appState.tiktokSearchRunning = searching;
+            updateTikTokButtonState();
+            const btnText = elements.tiktokBtn.querySelector('.btn-text');
+            const spinner = elements.tiktokBtn.querySelector('.loading-spinner');
+            
+            if (searching) {
+                btnText.style.display = 'none';
+                spinner.style.display = 'inline-block';
+            } else {
+                btnText.style.display = 'inline';
+                spinner.style.display = 'none';
+            }
+        }
+
         function updateButtonState() {
             const isRateLimited = appState.rateLimitEndTime && Date.now() < appState.rateLimitEndTime;
             const shouldDisable = appState.searchRunning || isRateLimited;
@@ -178,6 +439,22 @@
             }
         }
 
+        function updateTikTokButtonState() {
+            const isRateLimited = appState.tiktokRateLimitEndTime && Date.now() < appState.tiktokRateLimitEndTime;
+            const shouldDisable = appState.tiktokSearchRunning || isRateLimited;
+            
+            elements.tiktokBtn.disabled = shouldDisable;
+            const btnText = elements.tiktokBtn.querySelector('.btn-text');
+            
+            if (isRateLimited && !appState.tiktokSearchRunning) {
+                btnText.textContent = 'Rate Limited';
+                elements.tiktokBtn.classList.add('rate-limited');
+            } else {
+                btnText.textContent = 'Fetch Data';
+                elements.tiktokBtn.classList.remove('rate-limited');
+            }
+        }
+
         function showRateLimitWarning(message, retryAfter) {
             elements.rateLimitMessage.textContent = message;
             elements.rateLimitWarning.style.display = 'block';
@@ -189,11 +466,29 @@
             }
         }
 
+        function showTikTokRateLimitWarning(message, retryAfter) {
+            elements.tiktokRateLimitMessage.textContent = message;
+            elements.tiktokRateLimitWarning.style.display = 'block';
+            elements.tiktokRateLimitWarning.classList.add('visible');
+            
+            if (retryAfter) {
+                appState.tiktokRateLimitEndTime = Date.now() + (retryAfter * 1000);
+                startTikTokRateLimitCountdown();
+            }
+        }
+
         function hideRateLimitWarning() {
             elements.rateLimitWarning.style.display = 'none';
             elements.rateLimitWarning.classList.remove('visible');
             appState.rateLimitEndTime = null;
             clearInterval(appState.rateLimitCountdown);
+        }
+
+        function hideTikTokRateLimitWarning() {
+            elements.tiktokRateLimitWarning.style.display = 'none';
+            elements.tiktokRateLimitWarning.classList.remove('visible');
+            appState.tiktokRateLimitEndTime = null;
+            clearInterval(appState.tiktokRateLimitCountdown);
         }
 
         function startRateLimitCountdown() {
@@ -214,6 +509,28 @@
                 } else {
                     elements.rateLimitCountdown.textContent = `Try again in ${remaining}s`;
                     updateButtonState();
+                }
+            }, 1000);
+        }
+
+        function startTikTokRateLimitCountdown() {
+            clearInterval(appState.tiktokRateLimitCountdown);
+            
+            appState.tiktokRateLimitCountdown = setInterval(() => {
+                if (!appState.tiktokRateLimitEndTime) {
+                    clearInterval(appState.tiktokRateLimitCountdown);
+                    return;
+                }
+                
+                const remaining = Math.max(0, Math.ceil((appState.tiktokRateLimitEndTime - Date.now()) / 1000));
+                
+                if (remaining <= 0) {
+                    hideTikTokRateLimitWarning();
+                    updateTikTokButtonState();
+                    clearInterval(appState.tiktokRateLimitCountdown);
+                } else {
+                    elements.tiktokRateLimitCountdown.textContent = `Try again in ${remaining}s`;
+                    updateTikTokButtonState();
                 }
             }, 1000);
         }
@@ -360,6 +677,72 @@
             return div.innerHTML;
         }
 
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                // Show feedback
+                const btn = event.target.closest('.copy-btn');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 1000);
+            });
+        }
+
+        function displayTikTokResults(data) {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+
+            const profile = data.profile || {};
+            const stats = data.stats || {};
+
+            // Update profile info
+            document.getElementById('tiktok-nickname').textContent = profile.Nickname || 'Unknown';
+            document.getElementById('tiktok-username').textContent = profile.Username || '@unknown';
+            document.getElementById('tiktok-country').textContent = profile.Country || 'Unknown';
+            document.getElementById('tiktok-language').textContent = profile.Language || 'Unknown';
+            document.getElementById('tiktok-about').textContent = profile.About || 'User has no about';
+            
+            // Update avatar
+            const avatar = document.getElementById('tiktok-avatar');
+            if (profile['Avatar URL']) {
+                avatar.src = profile['Avatar URL'];
+                avatar.style.display = 'block';
+            } else {
+                avatar.style.display = 'none';
+            }
+
+            // Update bio link
+            const bioLink = document.getElementById('tiktok-bio-link');
+            if (profile['Bio Link']) {
+                bioLink.innerHTML = `<a href="${profile['Bio Link']}" target="_blank" rel="noopener noreferrer">${profile['Bio Link']}</a>`;
+            } else {
+                bioLink.textContent = 'No bio link available';
+            }
+
+            // Update stats
+            document.getElementById('tiktok-followers').textContent = stats.Followers || '0';
+            document.getElementById('tiktok-following').textContent = stats.Following || '0';
+            document.getElementById('tiktok-hearts').textContent = stats.Hearts || '0';
+            document.getElementById('tiktok-videos').textContent = stats.Videos || '0';
+            document.getElementById('tiktok-friends').textContent = stats.Friends || '0';
+
+            // Update details
+            document.getElementById('tiktok-user-id').textContent = profile['User ID'] || 'Unknown';
+            document.getElementById('tiktok-created').textContent = profile['Account Created'] || 'Unknown';
+            document.getElementById('tiktok-nickname-edited').textContent = profile['Nickname Last Modified'] || 'Unknown';
+            document.getElementById('tiktok-username-changed').textContent = profile['Username Last Modified'] || 'Unknown';
+
+            // Show results
+            elements.tiktokResults.style.display = 'block';
+            elements.tiktokResults.classList.add('visible');
+        }
+
+        // Event listeners
         elements.searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (appState.searchRunning) return;
@@ -420,6 +803,63 @@
             });
         });
 
+        elements.tiktokForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (appState.tiktokSearchRunning) return;
+            
+            // Check if rate limited
+            const isRateLimited = appState.tiktokRateLimitEndTime && Date.now() < appState.tiktokRateLimitEndTime;
+            if (isRateLimited) return;
+            
+            elements.tiktokBtn.disabled = true;
+            setTimeout(() => { elements.tiktokBtn.blur(); }, 50);
+            const username = this.username.value.trim();
+            if (!username) {
+                setTikTokSearchState(false);
+                return;
+            }
+            if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+                alert('Username can only contain letters, numbers, dots, underscores, and hyphens');
+                setTikTokSearchState(false);
+                return;
+            }
+            
+            hideTikTokRateLimitWarning();
+            elements.tiktokResults.style.display = 'none';
+            elements.tiktokResults.classList.remove('visible');
+            setTikTokSearchState(true);
+            
+            const formData = new FormData(this);
+            fetch('/tiktok_check', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.status === 429) {
+                    return response.json().then(data => {
+                        throw new Error(`RATE_LIMIT:${data.retry_after || 60}:${data.message || 'Rate limit exceeded'}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayTikTokResults(data);
+                setTikTokSearchState(false);
+            })
+            .catch(error => {
+                console.error('Error fetching TikTok data:', error);
+                if (error.message.startsWith('RATE_LIMIT:')) {
+                    const parts = error.message.split(':');
+                    const retryAfter = parseInt(parts[1]) || 60;
+                    const message = parts[2] || 'Rate limit exceeded';
+                    showTikTokRateLimitWarning(message, retryAfter);
+                } else {
+                    alert('Error fetching TikTok data. Please try again.');
+                }
+                setTikTokSearchState(false);
+            });
+        });
+
         elements.filterBar.addEventListener('click', function(e) {
             if (e.target.classList.contains('filter-btn')) {
                 applyFilter(e.target.dataset.filter);
@@ -468,10 +908,12 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
             initParticles();
             initSpotlight();
             checkRateLimitStatus();
             updateButtonState();
+            updateTikTokButtonState();
         });
     </script>
 </body>

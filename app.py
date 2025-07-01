@@ -149,6 +149,45 @@ def create_app():
             app.logger.error(f"Error in start_check: {e}")
             return jsonify({'error': 'Internal server error'}), 500
 
+    @app.route('/tiktok_check', methods=['POST'])
+    @limiter.limit("3 per minute")
+    def tiktok_check():
+        try:
+            csrf_token = request.form.get('csrf_token')
+            if not csrf_token or csrf_token != session.get('csrf_token'):
+                return jsonify({'error': 'Invalid CSRF token'}), 403
+
+            username = request.form.get('username', '').strip()
+            username = sanitize_username(username)
+            if not username:
+                return jsonify({'error': 'Invalid username format'}), 400
+
+            client_ip = get_client_ip()
+            ip_logger.info(f"{client_ip} TikTok:{username}")
+
+            # Call the TikTok API
+            api_url = f"https://faas-sgp1-18bc02ac.doserverless.co/api/v1/web/fn-67a396e1-78e9-4dff-8f6a-0f07c2d80c56/default/sm-t/?username={username}"
+            
+            async def fetch_tiktok_data():
+                try:
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        response = await client.get(api_url)
+                        if response.status_code == 200:
+                            return response.json()
+                        else:
+                            return {'error': f'API returned status {response.status_code}'}
+                except Exception as e:
+                    return {'error': f'Failed to fetch data: {str(e)}'}
+
+            # Run the async function
+            result = asyncio.run(fetch_tiktok_data())
+            
+            return jsonify(result)
+
+        except Exception as e:
+            app.logger.error(f"Error in tiktok_check: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+
     @app.route('/rate_limit_status')
     def rate_limit_status():
         """Check current rate limit status for the client IP"""
