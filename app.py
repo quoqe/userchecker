@@ -168,21 +168,25 @@ def create_app():
             # Call the TikTok API
             api_url = f"https://faas-sgp1-18bc02ac.doserverless.co/api/v1/web/fn-67a396e1-78e9-4dff-8f6a-0f07c2d80c56/default/sm-t/?username={username}"
             
+
+
             async def fetch_tiktok_data():
                 try:
                     async with httpx.AsyncClient(timeout=30.0) as client:
                         response = await client.get(api_url)
                         if response.status_code == 200:
-                            return response.json()
+                            data = response.json()
+                            return data, 200
+                        elif response.status_code == 404:
+                            return {'error': 'User not found'}, 404
                         else:
-                            return {'error': f'API returned status {response.status_code}'}
+                            return {'error': f'API returned status {response.status_code}'}, response.status_code
                 except Exception as e:
-                    return {'error': f'Failed to fetch data: {str(e)}'}
+                    return {'error': f'Failed to fetch data: {str(e)}'}, 500
 
             # Run the async function
-            result = asyncio.run(fetch_tiktok_data())
-            
-            return jsonify(result)
+            result, status = asyncio.run(fetch_tiktok_data())
+            return jsonify(result), status
 
         except Exception as e:
             app.logger.error(f"Error in tiktok_check: {e}")

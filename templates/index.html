@@ -696,72 +696,103 @@
             }, 2000);
         }
 
-        function downloadAvatar() {
-            const avatarImg = document.getElementById('tiktok-avatar');
-            const avatarUrl = avatarImg.src;
-            const username = document.getElementById('tiktok-username').textContent;
-            
-            if (avatarUrl && avatarUrl !== '') {
-                const link = document.createElement('a');
-                link.href = avatarUrl;
-                link.download = `${username}_avatar.jpg`;
-                link.target = '_blank';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+      async function downloadAvatar() {
+    const avatarImg = document.getElementById('tiktok-avatar');
+    const avatarUrl = avatarImg.src;
+    const username = document.getElementById('tiktok-username').textContent || 'avatar';
+
+    if (avatarUrl && avatarUrl !== '') {
+        try {
+            const response = await fetch(avatarUrl, { mode: 'cors' });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const blob = await response.blob();
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${username}_avatar.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        } catch (err) {
+            alert('Failed to download avatar. Try right-clicking the image and choosing "Save As".');
+            console.error(err);
         }
+    }
+}
 
-        function displayTikTokResults(data) {
-            if (data.error) {
-                alert('Error: ' + data.error);
-                return;
-            }
 
-            const profile = data.profile || {};
-            const stats = data.stats || {};
+function displayTikTokResults(data) {
+    if (data.error) {
+        alert('Error: ' + data.error);
+        return;
+    }
 
-            // Update profile info
-            document.getElementById('tiktok-nickname').textContent = profile.Nickname || 'Unknown';
-            document.getElementById('tiktok-username').textContent = profile.Username || '@unknown';
-            document.getElementById('tiktok-country').textContent = profile.Country || 'Unknown';
-            document.getElementById('tiktok-language').textContent = profile.Language || 'Unknown';
-            document.getElementById('tiktok-about').textContent = profile.About || 'User has no about';
-            
-            // Update avatar
-            const avatar = document.getElementById('tiktok-avatar');
-            if (profile['Avatar URL']) {
-                avatar.src = profile['Avatar URL'];
-                avatar.style.display = 'block';
-            } else {
-                avatar.style.display = 'none';
-            }
+    // Animate the tiktokResults card
+    elements.tiktokResults.classList.remove('animated-fade-in');
+    void elements.tiktokResults.offsetWidth; // force reflow for restart
+    elements.tiktokResults.classList.add('animated-fade-in');
 
-            // Update bio link
-            const bioLink = document.getElementById('tiktok-bio-link');
-            if (profile['Bio Link']) {
-                bioLink.innerHTML = `<a href="${profile['Bio Link']}" target="_blank" rel="noopener noreferrer">${profile['Bio Link']}</a>`;
-            } else {
-                bioLink.textContent = 'No bio link available';
-            }
+    const profile = data.profile || {};
+    const stats = data.stats || {};
 
-            // Update stats
-            document.getElementById('tiktok-followers').textContent = stats.Followers || '0';
-            document.getElementById('tiktok-following').textContent = stats.Following || '0';
-            document.getElementById('tiktok-hearts').textContent = stats.Hearts || '0';
-            document.getElementById('tiktok-videos').textContent = stats.Videos || '0';
-            document.getElementById('tiktok-friends').textContent = stats.Friends || '0';
+    // Update profile info
+    document.getElementById('tiktok-nickname').textContent = profile.Nickname || 'Unknown';
+    document.getElementById('tiktok-username').textContent = profile.Username || '@unknown';
+    document.getElementById('tiktok-country').textContent = profile.Country || 'Unknown';
+    document.getElementById('tiktok-language').textContent = profile.Language || 'Unknown';
+    document.getElementById('tiktok-about').textContent = profile.About || 'User has no about';
 
-            // Update details
-            document.getElementById('tiktok-user-id').textContent = profile['User ID'] || 'Unknown';
-            document.getElementById('tiktok-created').textContent = profile['Account Created'] || 'Unknown';
-            document.getElementById('tiktok-nickname-edited').textContent = profile['Nickname Last Modified'] || 'Unknown';
-            document.getElementById('tiktok-username-changed').textContent = profile['Username Last Modified'] || 'Unknown';
+    // Update avatar
+    const avatar = document.getElementById('tiktok-avatar');
+    if (profile['Avatar URL']) {
+        avatar.src = profile['Avatar URL'];
+        avatar.style.display = 'block';
+    } else {
+        avatar.style.display = 'none';
+    }
 
-            // Show results
-            elements.tiktokResults.style.display = 'block';
-            elements.tiktokResults.classList.add('visible');
+    // Update bio link
+    const bioLink = document.getElementById('tiktok-bio-link');
+    if (profile['Bio Link']) {
+        bioLink.innerHTML = `<a href="${profile['Bio Link']}" target="_blank" rel="noopener noreferrer">${profile['Bio Link']}</a>`;
+    } else {
+        bioLink.textContent = 'No bio link available';
+    }
+
+    // Update stats
+    document.getElementById('tiktok-followers').textContent = stats.Followers || '0';
+    document.getElementById('tiktok-following').textContent = stats.Following || '0';
+    document.getElementById('tiktok-hearts').textContent = stats.Hearts || '0';
+    document.getElementById('tiktok-videos').textContent = stats.Videos || '0';
+    document.getElementById('tiktok-friends').textContent = stats.Friends || '0';
+
+    // Update details
+    document.getElementById('tiktok-user-id').textContent = profile['User ID'] || 'Unknown';
+    document.getElementById('tiktok-created').textContent = profile['Account Created'] || 'Unknown';
+    document.getElementById('tiktok-nickname-edited').textContent = profile['Nickname Last Modified'] || 'Unknown';
+    document.getElementById('tiktok-username-changed').textContent = profile['Username Last Modified'] || 'Unknown';
+
+    // Show results
+    elements.tiktokResults.style.display = 'block';
+    elements.tiktokResults.classList.add('visible');
+
+    // Animation CSS injection (only once)
+    if (!document.getElementById('not-found-animations')) {
+        const style = document.createElement('style');
+        style.id = 'not-found-animations';
+        style.innerHTML = `
+        .animated-fade-in {
+            animation: fadeInUp 0.7s cubic-bezier(.4,0,.2,1) both;
         }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        `;
+        document.head.appendChild(style);
+    }
+}
 
         // Event listeners
         elements.searchForm.addEventListener('submit', function(e) {
@@ -827,11 +858,9 @@
         elements.tiktokForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (appState.tiktokSearchRunning) return;
-            
             // Check if rate limited
             const isRateLimited = appState.tiktokRateLimitEndTime && Date.now() < appState.tiktokRateLimitEndTime;
             if (isRateLimited) return;
-            
             elements.tiktokBtn.disabled = true;
             setTimeout(() => { elements.tiktokBtn.blur(); }, 50);
             const username = this.username.value.trim();
@@ -844,42 +873,120 @@
                 setTikTokSearchState(false);
                 return;
             }
-            
             hideTikTokRateLimitWarning();
             elements.tiktokResults.style.display = 'none';
             elements.tiktokResults.classList.remove('visible');
             setTikTokSearchState(true);
-            
             const formData = new FormData(this);
             fetch('/tiktok_check', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
+            .then(async response => {
+                if (response.status === 404) {
+                    // Show user not found message in results area
+                    showTikTokNotFound();
+                    setTikTokSearchState(false);
+                    return null;
+                }
                 if (response.status === 429) {
-                    return response.json().then(data => {
-                        throw new Error(`RATE_LIMIT:${data.retry_after || 60}:${data.message || 'Rate limit exceeded'}`);
-                    });
+                    const data = await response.json();
+                    throw new Error(`RATE_LIMIT:${data.retry_after || 60}:${data.message || 'Rate limit exceeded'}`);
                 }
                 return response.json();
             })
             .then(data => {
-                displayTikTokResults(data);
+                if (data) {
+                    displayTikTokResults(data);
+                }
                 setTikTokSearchState(false);
             })
             .catch(error => {
                 console.error('Error fetching TikTok data:', error);
-                if (error.message.startsWith('RATE_LIMIT:')) {
+                if (error.message && error.message.startsWith('RATE_LIMIT:')) {
                     const parts = error.message.split(':');
                     const retryAfter = parseInt(parts[1]) || 60;
                     const message = parts[2] || 'Rate limit exceeded';
                     showTikTokRateLimitWarning(message, retryAfter);
+                } else if (error && error.message && error.message.includes('404')) {
+                    showTikTokNotFound();
                 } else {
-                    alert('Error fetching TikTok data. Please try again.');
+                    // Show a generic error in the results area
+                    showTikTokError();
                 }
                 setTikTokSearchState(false);
             });
         });
+
+function showTikTokNotFound() {
+    elements.tiktokResults.innerHTML = `
+        <div class="tiktok-profile-card not-found-card animated-fade-in">
+            <div class="profile-header" style="justify-content: center; text-align: center; flex-direction: column; align-items: center;">
+                <div class="not-found-icon animated-pop" style="margin-bottom: 1.2rem;">
+                    <svg width="54" height="54" viewBox="0 0 48 48" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle class="not-found-circle" cx="24" cy="24" r="20" fill="rgba(239,68,68,0.08)"/>
+                        <line class="not-found-x1" x1="16" y1="16" x2="32" y2="32" />
+                        <line class="not-found-x2" x1="32" y1="16" x2="16" y2="32" />
+                    </svg>
+                </div>
+                <h2 class="profile-nickname animated-fade-in" style="color: #ef4444; font-weight: 700; font-size: 2.1rem; letter-spacing: 0.5px;">User Not Found</h2>
+                <p class="not-found-message animated-fade-in" style="color: #a1a1aa; margin-top: 0.7rem; font-size: 1.13rem;">This TikTok user does not exist or is unavailable.</p>
+            </div>
+        </div>
+    `;
+    elements.tiktokResults.style.display = 'block';
+    elements.tiktokResults.classList.add('visible');
+
+    // Animation CSS injection (only once)
+    if (!document.getElementById('not-found-animations')) {
+        const style = document.createElement('style');
+        style.id = 'not-found-animations';
+        style.innerHTML = `
+        .animated-fade-in {
+            animation: fadeInUp 0.7s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animated-pop {
+            animation: popIn 0.6s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.7) rotate(-10deg); }
+            60% { opacity: 1; transform: scale(1.1) rotate(2deg); }
+            100% { opacity: 1; transform: scale(1) rotate(0); }
+        }
+        .not-found-x1, .not-found-x2 {
+            stroke-dasharray: 24;
+            stroke-dashoffset: 24;
+            animation: dashX 0.7s 0.2s cubic-bezier(.4,0,.2,1) forwards;
+        }
+        .not-found-x2 {
+            animation-delay: 0.35s;
+        }
+        @keyframes dashX {
+            to { stroke-dashoffset: 0; }
+        }
+        .not-found-circle {
+            transform-origin: 50% 50%;
+            animation: circlePulse 1.2s 0.1s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes circlePulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            60% { transform: scale(1.08); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+        function showTikTokError() {
+            elements.tiktokResults.innerHTML = `<div class="tiktok-profile-card"><div class="profile-header"><h2 class="profile-nickname">An error occurred. Please try again.</h2></div></div>`;
+            elements.tiktokResults.style.display = 'block';
+            elements.tiktokResults.classList.add('visible');
+        }
 
         elements.filterBar.addEventListener('click', function(e) {
             if (e.target.classList.contains('filter-btn')) {
