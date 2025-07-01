@@ -555,19 +555,6 @@
       "cat": "art"
     },
     {
-      "name": "asciinema",
-      "uri_check": "https://asciinema.org/~{account}",
-      "e_code": 200,
-      "e_string": "class=\"profile-page\"",
-      "m_string": "<h1>404 Not Found</h1>",
-      "m_code": 404,
-      "known": [
-        "john",
-        "red"
-      ],
-      "cat": "coding"
-    },
-    {
       "name": "AtCoder",
       "uri_check": "https://atcoder.jp/users/{account}",
       "e_code": 200,
@@ -1642,19 +1629,6 @@
       "cat": "social"
     },
     {
-      "name": "cracked_io",
-      "uri_check": "https://cracked.io/{account}",
-      "e_code": 200,
-      "e_string": "Cracked.io - Profile of",
-      "m_string": "The member you specified is either invalid or doesn't exist",
-      "m_code": 404,
-      "known": [
-        "RealPsycho",
-        "SamWinchester"
-      ],
-      "cat": "social"
-    },
-    {
       "name": "crevado",
       "uri_check": "https://{account}.crevado.com/",
       "strip_bad_char": ".",
@@ -2197,19 +2171,6 @@
       "known": [
         "chriskahn",
         "swilken"
-      ],
-      "cat": "hobby"
-    },
-    {
-      "name": "Drum",
-      "uri_check": "https://drum.io/{account}/",
-      "e_code": 200,
-      "e_string": "firstName\": \"",
-      "m_string": "Page not found",
-      "m_code": 302,
-      "known": [
-        "huckcredibleshotz",
-        "thesuccesspalette"
       ],
       "cat": "hobby"
     },
@@ -2883,19 +2844,6 @@
       "cat": "gaming"
     },
     {
-      "name": "FriendFinder",
-      "uri_check": "https://friendfinder.com/profile/{account}",
-      "e_code": 200,
-      "e_string": "Last Visit:",
-      "m_string": "302 Found",
-      "m_code": 302,
-      "known": [
-        "alex56",
-        "john"
-      ],
-      "cat": "dating"
-    },
-    {
       "name": "FriendFinder-X",
       "uri_check": "https://www.friendfinder-x.com/profile/{account}",
       "e_code": 200,
@@ -3129,19 +3077,6 @@
       "cat": "coding"
     },
     {
-      "name": "giters",
-      "uri_check": "https://giters.com/{account}",
-      "e_code": 200,
-      "e_string": " - Giters</title>",
-      "m_string": "This page could not be found</title>",
-      "m_code": 404,
-      "known": [
-        "WebBreacher",
-        "C3n7ral051nt4g3ncy"
-      ],
-      "cat": "coding"
-    },
-    {
       "name": "GitHub",
       "uri_check": "https://api.github.com/users/{account}",
       "uri_pretty": "https://github.com/{account}",
@@ -3339,20 +3274,6 @@
       "cat": "shopping"
     },
     {
-      "name": "Habbo.com",
-      "uri_check": " https://www.habbo.com/api/public/users?name={account}",
-      "uri_pretty": " https://www.habbo.com/profile/{account}",
-      "e_code": 200,
-      "e_string": "uniqueId\":",
-      "m_string": "error\": \"not-found",
-      "m_code": 404,
-      "known": [
-        "john",
-        "michelle"
-      ],
-      "cat": "gaming"
-    },
-    {
       "name": "Habbo.com.br",
       "uri_check": "https://www.habbo.com.br/api/public/users?name={account}",
       "uri_pretty": "https://www.habbo.com.br/profile/{account}",
@@ -3391,20 +3312,6 @@
       "known": [
         "klaus",
         "angelinaa"
-      ],
-      "cat": "gaming"
-    },
-    {
-      "name": "Habbo.es",
-      "uri_check": " https://www.habbo.es/api/public/users?name={account}",
-      "uri_pretty": " https://www.habbo.es/profile/{account}",
-      "e_code": 200,
-      "e_string": "uniqueId\":",
-      "m_string": "not-found",
-      "m_code": 404,
-      "known": [
-        "juan",
-        "michelle"
       ],
       "cat": "gaming"
     },
@@ -3675,20 +3582,6 @@
         "arisu-cum-stats-2787"
       ],
       "cat": "xx NSFW xx"
-    },
-    {
-      "name": "Hcommons.social (Mastodon Instance)",
-      "uri_check": "https://hcommons.social/api/v1/accounts/lookup?acct={account}",
-      "uri_pretty": "https://hcommons.social/@{account}",
-      "e_code": 200,
-      "e_string": "display_name",
-      "m_string": "Record not found",
-      "m_code": 404,
-      "known": [
-        "hello",
-        "iuulaio"
-      ],
-      "cat": "social"
     },
     {
       "name": "Heylink",
@@ -4917,19 +4810,6 @@
       "cat": "business"
     },
     {
-      "name": "Massage Anywhere",
-      "uri_check": "https://www.massageanywhere.com/profile/{account}",
-      "e_code": 200,
-      "e_string": "<title>MassageAnywhere.com Profile for ",
-      "m_string": "<title>MassageAnywhere.com: Search Results</title>",
-      "m_code": 200,
-      "known": [
-        "lorilmccluskey",
-        "LomiNYC"
-      ],
-      "cat": "health"
-    },
-    {
       "name": "masto.ai",
       "uri_check": "https://masto.ai/@{account}",
       "e_code": 200,
@@ -5220,19 +5100,6 @@
         "marsha"
       ],
       "cat": "dating"
-    },
-    {
-      "name": "message_me",
-      "uri_check": "https://mssg.me/{account}",
-      "e_code": 200,
-      "e_string": "_id",
-      "m_string": "<title>404</title>",
-      "m_code": 404,
-      "known": [
-        "sue",
-        "david"
-      ],
-      "cat": "social"
     },
     {
       "name": "metacritic",
@@ -6078,19 +5945,6 @@
       "cat": "social"
     },
     {
-      "name": "palnet",
-      "uri_check": "https://www.palnet.io/@{account}/",
-      "e_code": 200,
-      "e_string": "class=\"profile-cover\"",
-      "m_string": "Unknown user account!",
-      "m_code": 404,
-      "known": [
-        "trincowski-pt",
-        "anggreklestari"
-      ],
-      "cat": "social"
-    },
-    {
       "name": "Parler",
       "uri_check": "https://parler.com/user/{account}",
       "e_code": 200,
@@ -6442,19 +6296,6 @@
       "known": [
         "red",
         "blue"
-      ],
-      "cat": "gaming"
-    },
-    {
-      "name": "Pokerstrategy",
-      "uri_check": "http://www.pokerstrategy.net/user/{account}/profile/",
-      "e_code": 200,
-      "e_string": "User profile for",
-      "m_string": "Sorry, the requested page couldn't be found!",
-      "m_code": 404,
-      "known": [
-        "john",
-        "bob"
       ],
       "cat": "gaming"
     },
@@ -6830,19 +6671,6 @@
       "cat": "social"
     },
     {
-      "name": "RaidForums - Archive",
-      "uri_check": "https://rf-archive.com/users.php?s_tag={account}",
-      "e_code": 200,
-      "e_string": "\"id\":",
-      "m_string": "[]",
-      "m_code": 200,
-      "known": [
-        "pompompurin",
-        "DexterM1"
-      ],
-      "cat": "archived"
-    },
-    {
       "name": "Rant.li",
       "uri_check": "https://rant.li/{account}/",
       "e_code": 200,
@@ -6868,20 +6696,6 @@
         "vintagemozart"
       ],
       "cat": "tech"
-    },
-    {
-      "name": "RblxTrade",
-      "uri_check": "https://rblx.trade/api/v1/user/get-by-username?username={account}",
-      "uri_pretty": "https://rblx.trade/p/{account}",
-      "e_code": 200,
-      "e_string": "\"userId\":",
-      "m_string": "\"success\":false",
-      "m_code": 400,
-      "known": [
-        "webbreacher",
-        "SonOfSevenless"
-      ],
-      "cat": "gaming"
     },
     {
       "name": "redbubble",
@@ -7238,20 +7052,6 @@
         "michi"
       ],
       "cat": "music"
-    },
-    {
-      "name": "Sexworker",
-      "uri_check": "https://sexworker.com/api/profile/{account}",
-      "uri_pretty": "https://sexworker.com/{account}",
-      "e_code": 200,
-      "e_string": "profilePictureUrl",
-      "m_string": "This user does not exist.",
-      "m_code": 404,
-      "known": [
-        "sakii_nightshade",
-        "annajean2319"
-      ],
-      "cat": "xx NSFW xx"
     },
     {
       "name": "SFD",
@@ -8022,19 +7822,6 @@
       "cat": "coding"
     },
     {
-      "name": "Teddygirls",
-      "uri_check": "https://teddysgirls.net/models/{account}",
-      "e_code": 200,
-      "e_string": ";s exclusive page to subscribe to her",
-      "m_string": "The page you were looking for doesn't exist",
-      "m_code": 404,
-      "known": [
-        "jaycee-starr",
-        "chubbychick94"
-      ],
-      "cat": "xx NSFW xx"
-    },
-    {
       "name": "Teespring",
       "uri_check": "https://commerce.teespring.com/v1/stores?slug={account}",
       "uri_pretty": "https://{account}.creator-spring.com",
@@ -8047,19 +7834,6 @@
         "honey"
       ],
       "cat": "business"
-    },
-    {
-      "name": "Teknik",
-      "uri_check": "https://user.teknik.io/{account}",
-      "e_code": 200,
-      "e_string": "Public Key",
-      "m_string": "The user does not exist",
-      "m_code": 200,
-      "known": [
-        "red",
-        "bob"
-      ],
-      "cat": "tech"
     },
     {
       "name": "Telegram",
@@ -8681,20 +8455,6 @@
         "not1face"
       ],
       "cat": "social"
-    },
-    {
-      "name": "utip.io",
-      "uri_check": "https://utip.io/creator/profile/{account}",
-      "uri_pretty": "https://utip.io/{account}",
-      "e_code": 200,
-      "e_string": "\"userName\"",
-      "m_string": "Not a valid web service key",
-      "m_code": 404,
-      "known": [
-        "honey",
-        "chloe"
-      ],
-      "cat": "finance"
     },
     {
       "name": "uwu.ai",

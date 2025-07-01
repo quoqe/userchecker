@@ -159,7 +159,7 @@ def create_app():
             
             # Try to get remaining requests from limiter storage
             try:
-                from flask_limiter.storage import MemoryStorage
+                from flask_limiter.util import MemoryStorage
                 if isinstance(limiter.storage, MemoryStorage):
                     # For memory storage, we can't easily get exact remaining count
                     # So we'll return a simple status
