@@ -859,26 +859,30 @@ body {
   color: var(--accent-primary);
 }
 
-/* Copy notification */
 .copy-notification {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  bottom: 20px; /* or top/right as you prefer */
+  left: 20px;   /* adjust position */
   background: var(--accent-success);
   color: white;
   padding: 1rem 1.5rem;
   border-radius: 8px;
   font-weight: 500;
   z-index: 1000;
-  transform: translateX(100%);
+
+  /* Hide by default */
   opacity: 0;
+  pointer-events: none;
+  transform: translateX(100%);
   transition: all 0.3s ease;
 }
 
 .copy-notification.show {
-  transform: translateX(0);
   opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
 }
+
 
 /* Loading animations */
 .loading-spinner {
@@ -1182,4 +1186,17 @@ body {
 .tab-btn:focus {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .copy-notification {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(100%) !important;
+  }
+  .copy-notification.show {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateX(0) !important;
+  }
 }
