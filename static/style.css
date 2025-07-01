@@ -1,82 +1,4 @@
-/* --- FIXED: Unified copy notification for all devices --- */
-.copy-notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: var(--accent-success, #10b981);
-  color: #fff;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 1rem;
-  z-index: 10000; /* Increased z-index */
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(100%);
-  transition: all 0.3s cubic-bezier(.4,0,.2,1);
-  min-width: 200px;
-  text-align: center;
-}
-
-.copy-notification.show {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(0);
-}
-
-@media (max-width: 768px) {
-  .copy-notification {
-    top: 15px;
-    right: 15px;
-    font-size: 0.95rem;
-    padding: 0.8rem 1.3rem;
-    border-radius: 7px;
-    max-width: calc(100vw - 30px);
-    width: auto;
-    min-width: 180px;
-    box-shadow: 0 3px 15px rgba(16, 185, 129, 0.5);
-  }
-}
-
-@media (max-width: 480px) {
-  .copy-notification {
-    top: 10px;
-    right: 10px;
-    font-size: 0.9rem;
-    padding: 0.7rem 1.1rem;
-    border-radius: 6px;
-    max-width: calc(100vw - 20px);
-    min-width: 160px;
-  }
-}
-
-/* --- Fix for TikTok avatar not showing on mobile --- */
-.profile-avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #181828;
-  box-shadow: 0 2px 12px rgba(0,212,255,0.13);
-  display: block;
-  margin: 0 auto;
-  transition: box-shadow 0.2s;
-}
-@media (max-width: 768px) {
-  .profile-avatar {
-    width: 100px;
-    height: 100px;
-  }
-}
-@media (max-width: 540px) {
-  .profile-avatar {
-    width: 80px;
-    height: 80px;
-  }
-}
-
-/* Logo eye next to @5jpg */
+/* Logo eye next to Qernel */
 .logo-eye {
   display: inline-block;
   vertical-align: middle;
@@ -97,7 +19,6 @@
 .filter-icon:hover svg {
   stroke: #7c3aed;
 }
-
 /* Modern Cybersecurity Theme */
 :root {
   --bg-primary: #0a0a0f;
@@ -297,30 +218,18 @@ body {
   height: 20px;
 }
 
-/* Tab Content - ENHANCED SMOOTH TRANSITIONS */
+/* Tab Content */
 .tab-content {
   display: none;
   opacity: 0;
   transform: translateY(20px);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.5s ease;
 }
 
 .tab-content.active {
   display: block;
   opacity: 1;
   transform: translateY(0);
-  animation: slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Search form */
@@ -747,7 +656,11 @@ body {
 }
 
 .profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
   border: 3px solid var(--accent-primary);
+  object-fit: cover;
   box-shadow: var(--shadow-glow);
 }
 
@@ -946,6 +859,27 @@ body {
   color: var(--accent-primary);
 }
 
+/* Copy notification */
+.copy-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--accent-success);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  z-index: 1000;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.copy-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
 /* Loading animations */
 .loading-spinner {
   display: inline-block;
@@ -1099,6 +1033,11 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+  }
+
   .profile-nickname {
     font-size: 1.5rem;
   }
@@ -1195,8 +1134,20 @@ body {
     width: 100%;
   }
 
+  .profile-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
   .profile-nickname {
     font-size: 1.2rem;
+  }
+
+  .copy-notification {
+    top: 10px;
+    right: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
 }
 
