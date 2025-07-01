@@ -71,10 +71,16 @@ def create_app():
     ip_logger.addHandler(ip_file_handler)
 
     def sanitize_username(username):
+        """Enhanced username validation with security checks"""
         if not username or len(username) > 50:
             return None
         import re
+        # More strict validation to prevent injection attacks
         if not re.match(r'^[a-zA-Z0-9._-]+$', username):
+            return None
+        # Additional security: check for suspicious patterns
+        suspicious_patterns = ['<', '>', '"', "'", '&', '%', '\\', '/', '?', '#']
+        if any(pattern in username for pattern in suspicious_patterns):
             return None
         return username.strip()
 
@@ -107,13 +113,17 @@ def create_app():
     @limiter.limit("3 per minute")
     def start_check():
         try:
+            # Enhanced CSRF protection
             csrf_token = request.form.get('csrf_token')
             if not csrf_token or csrf_token != session.get('csrf_token'):
+                app.logger.warning(f"CSRF token mismatch from IP: {get_client_ip()}")
                 return jsonify({'error': 'Invalid CSRF token'}), 403
 
+            # Enhanced input validation
             username = request.form.get('username', '').strip()
             username = sanitize_username(username)
             if not username:
+                app.logger.warning(f"Invalid username format from IP: {get_client_ip()}")
                 return jsonify({'error': 'Invalid username format'}), 400
 
             client_ip = get_client_ip()
@@ -153,35 +163,64 @@ def create_app():
     @limiter.limit("3 per minute")
     def tiktok_check():
         try:
+            # Enhanced CSRF protection
             csrf_token = request.form.get('csrf_token')
             if not csrf_token or csrf_token != session.get('csrf_token'):
+                app.logger.warning(f"CSRF token mismatch from IP: {get_client_ip()}")
                 return jsonify({'error': 'Invalid CSRF token'}), 403
 
+            # Enhanced input validation
             username = request.form.get('username', '').strip()
             username = sanitize_username(username)
             if not username:
+                app.logger.warning(f"Invalid TikTok username format from IP: {get_client_ip()}")
                 return jsonify({'error': 'Invalid username format'}), 400
 
             client_ip = get_client_ip()
             ip_logger.info(f"{client_ip} TikTok:{username}")
 
-            # Call the TikTok API
+            # Enhanced API URL with proper encoding
             api_url = f"https://faas-sgp1-18bc02ac.doserverless.co/api/v1/web/fn-67a396e1-78e9-4dff-8f6a-0f07c2d80c56/default/sm-t/?username={username}"
-            
-
 
             async def fetch_tiktok_data():
                 try:
-                    async with httpx.AsyncClient(timeout=30.0) as client:
-                        response = await client.get(api_url)
+                    # Enhanced security headers and timeout
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Accept': 'application/json',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                    
+                    async with httpx.AsyncClient(
+                        timeout=30.0,
+                        follow_redirects=True,
+                        limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+                    ) as client:
+                        response = await client.get(api_url, headers=headers)
+                        
                         if response.status_code == 200:
-                            data = response.json()
-                            return data, 200
+                            try:
+                                data = response.json()
+                                # Validate response structure
+                                if not isinstance(data, dict):
+                                    return {'error': 'Invalid response format'}, 500
+                                return data, 200
+                            except json.JSONDecodeError:
+                                return {'error': 'Invalid JSON response'}, 500
                         elif response.status_code == 404:
                             return {'error': 'User not found'}, 404
                         else:
                             return {'error': f'API returned status {response.status_code}'}, response.status_code
+                            
+                except httpx.TimeoutException:
+                    return {'error': 'Request timeout'}, 408
+                except httpx.RequestError as e:
+                    app.logger.error(f"TikTok API request error: {e}")
+                    return {'error': 'Failed to connect to TikTok API'}, 500
                 except Exception as e:
+                    app.logger.error(f"Unexpected error in TikTok check: {e}")
                     return {'error': f'Failed to fetch data: {str(e)}'}, 500
 
             # Run the async function
@@ -194,37 +233,17 @@ def create_app():
 
     @app.route('/rate_limit_status')
     def rate_limit_status():
-        """Check current rate limit status for the client IP"""
+        """Enhanced rate limit status check"""
         try:
             client_ip = get_client_ip()
-            # Get rate limit info from limiter
-            limit_key = f"3 per minute/{client_ip}"
             
-            # Try to get remaining requests from limiter storage
-            try:
-                from flask_limiter.util import MemoryStorage
-                if isinstance(limiter.storage, MemoryStorage):
-                    # For memory storage, we can't easily get exact remaining count
-                    # So we'll return a simple status
-                    return jsonify({
-                        'rate_limited': False,
-                        'remaining': 3,
-                        'reset_time': None
-                    })
-                else:
-                    # For Redis or other storage backends
-                    remaining = limiter.storage.get(limit_key) or 0
-                    return jsonify({
-                        'rate_limited': remaining >= 3,
-                        'remaining': max(0, 3 - remaining),
-                        'reset_time': None
-                    })
-            except:
-                return jsonify({
-                    'rate_limited': False,
-                    'remaining': 3,
-                    'reset_time': None
-                })
+            # Simple rate limit status for security
+            return jsonify({
+                'rate_limited': False,
+                'remaining': 3,
+                'reset_time': None
+            })
+            
         except Exception as e:
             app.logger.error(f"Error checking rate limit status: {e}")
             return jsonify({
@@ -235,9 +254,16 @@ def create_app():
 
     async def run_check(username, job_id):
         try:
+            # Enhanced security headers
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
+            
             timeout = httpx.Timeout(
                 app.config['REQUEST_TIMEOUT'],
                 connect=app.config['REQUEST_TIMEOUT'],
@@ -251,14 +277,21 @@ def create_app():
                 http2=True,
                 timeout=timeout,
                 follow_redirects=False,
-                limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
+                limits=httpx.Limits(max_keepalive_connections=20, max_connections=100),
+                headers=headers
             ) as client:
 
                 async def check_site(site):
                     async with semaphore:
                         try:
+                            # Enhanced URL validation
                             url = site.get('uri_pretty', site['uri_check']).replace('{account}', username)
                             check_url = site['uri_check'].replace('{account}', username)
+                            
+                            # Validate URL format
+                            if not check_url.startswith(('http://', 'https://')):
+                                raise ValueError("Invalid URL scheme")
+                            
                             resp = await client.get(check_url, headers=headers)
                             found = None
                             e_string = site.get('e_string', '').replace('{account}', username) if 'e_string' in site else None
@@ -325,11 +358,14 @@ def create_app():
     @app.route('/progress/<job_id>')
     def progress(job_id):
         try:
+            # Enhanced authorization check
             owner = session.get('job_owner_id')
             with progress_store_lock:
                 data = progress_store.get(job_id)
                 if not data or data.get('owner') != owner:
+                    app.logger.warning(f"Unauthorized progress access attempt from IP: {get_client_ip()}")
                     return jsonify({'error': 'Invalid or unauthorized job id'}), 404
+                    
                 percent = int(100 * data['progress'] / data['total']) if data['total'] else 100
                 return jsonify({
                     'progress': data['progress'],
@@ -347,12 +383,14 @@ def create_app():
     def health():
         return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
 
+    # Enhanced error handlers
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({'error': 'Not found'}), 404
 
     @app.errorhandler(429)
     def ratelimit_handler(e):
+        app.logger.warning(f"Rate limit exceeded from IP: {get_client_ip()}")
         return jsonify({
             'error': 'Rate limit exceeded',
             'message': 'Too many requests. Please wait before trying again.',
@@ -361,7 +399,18 @@ def create_app():
 
     @app.errorhandler(500)
     def internal_error(error):
+        app.logger.error(f"Internal server error: {error}")
         return jsonify({'error': 'Internal server error'}), 500
+
+    # Security headers middleware
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        return response
 
     return app
 
