@@ -7,6 +7,8 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, request, jsonify, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 import secrets
@@ -21,6 +23,19 @@ def create_app():
 
     # Security middleware
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+    # Rate limiting setup
+    def get_client_ip():
+        return request.headers.get('CF-Connecting-IP',
+               request.headers.get('X-Forwarded-For',
+               request.headers.get('X-Real-IP', request.remote_addr)))
+
+    limiter = Limiter(
+        app=app,
+        key_func=get_client_ip,
+        storage_uri=app.config['RATELIMIT_STORAGE_URL'],
+        default_limits=["1000 per hour"]
+    )
 
     # Logging setup
     if not app.debug:
@@ -54,11 +69,6 @@ def create_app():
     ip_file_handler.setLevel(logging.INFO)
     ip_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
     ip_logger.addHandler(ip_file_handler)
-
-    def get_client_ip():
-        return request.headers.get('CF-Connecting-IP',
-               request.headers.get('X-Forwarded-For',
-               request.headers.get('X-Real-IP', request.remote_addr)))
 
     def sanitize_username(username):
         if not username or len(username) > 50:
@@ -94,6 +104,7 @@ def create_app():
         return render_template('index.html')
 
     @app.route('/start_check', methods=['POST'])
+    @limiter.limit("3 per minute")
     def start_check():
         try:
             csrf_token = request.form.get('csrf_token')
@@ -137,6 +148,47 @@ def create_app():
         except Exception as e:
             app.logger.error(f"Error in start_check: {e}")
             return jsonify({'error': 'Internal server error'}), 500
+
+    @app.route('/rate_limit_status')
+    def rate_limit_status():
+        """Check current rate limit status for the client IP"""
+        try:
+            client_ip = get_client_ip()
+            # Get rate limit info from limiter
+            limit_key = f"3 per minute/{client_ip}"
+            
+            # Try to get remaining requests from limiter storage
+            try:
+                from flask_limiter.storage import MemoryStorage
+                if isinstance(limiter.storage, MemoryStorage):
+                    # For memory storage, we can't easily get exact remaining count
+                    # So we'll return a simple status
+                    return jsonify({
+                        'rate_limited': False,
+                        'remaining': 3,
+                        'reset_time': None
+                    })
+                else:
+                    # For Redis or other storage backends
+                    remaining = limiter.storage.get(limit_key) or 0
+                    return jsonify({
+                        'rate_limited': remaining >= 3,
+                        'remaining': max(0, 3 - remaining),
+                        'reset_time': None
+                    })
+            except:
+                return jsonify({
+                    'rate_limited': False,
+                    'remaining': 3,
+                    'reset_time': None
+                })
+        except Exception as e:
+            app.logger.error(f"Error checking rate limit status: {e}")
+            return jsonify({
+                'rate_limited': False,
+                'remaining': 3,
+                'reset_time': None
+            })
 
     async def run_check(username, job_id):
         try:
@@ -255,6 +307,14 @@ def create_app():
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({'error': 'Not found'}), 404
+
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return jsonify({
+            'error': 'Rate limit exceeded',
+            'message': 'Too many requests. Please wait before trying again.',
+            'retry_after': getattr(e, 'retry_after', 60)
+        }), 429
 
     @app.errorhandler(500)
     def internal_error(error):

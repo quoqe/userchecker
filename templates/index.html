@@ -40,6 +40,17 @@
                     <div class="loading-spinner" style="display: none;"></div>
                 </button>
             </form>
+            <div id="rate-limit-warning" class="rate-limit-warning" style="display: none;">
+                <div class="warning-content">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span id="rate-limit-message">Rate limit exceeded. Please wait before trying again.</span>
+                    <div id="rate-limit-countdown" class="countdown"></div>
+                </div>
+            </div>
             <div id="progress-section" class="progress-section">
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
@@ -104,7 +115,9 @@
             searchRunning: false,
             currentFilter: 'all',
             startTime: null,
-            scanInterval: null
+            scanInterval: null,
+            rateLimitCountdown: null,
+            rateLimitEndTime: null
         };
         const elements = {
             searchForm: document.getElementById('search-form'),
@@ -124,12 +137,15 @@
             totalFound: document.getElementById('total-found'),
             totalChecked: document.getElementById('total-checked'),
             successRate: document.getElementById('success-rate'),
-            scanTime: document.getElementById('scan-time')
+            scanTime: document.getElementById('scan-time'),
+            rateLimitWarning: document.getElementById('rate-limit-warning'),
+            rateLimitMessage: document.getElementById('rate-limit-message'),
+            rateLimitCountdown: document.getElementById('rate-limit-countdown')
         };
 
         function setSearchState(searching) {
             appState.searchRunning = searching;
-            elements.searchBtn.disabled = searching;
+            updateButtonState();
             if (searching) {
                 elements.btnText.style.display = 'none';
                 elements.loadingSpinner.style.display = 'inline-block';
@@ -145,6 +161,61 @@
                 elements.loadingSpinner.style.display = 'none';
                 clearInterval(appState.scanInterval);
             }
+        }
+
+        function updateButtonState() {
+            const isRateLimited = appState.rateLimitEndTime && Date.now() < appState.rateLimitEndTime;
+            const shouldDisable = appState.searchRunning || isRateLimited;
+            
+            elements.searchBtn.disabled = shouldDisable;
+            
+            if (isRateLimited && !appState.searchRunning) {
+                elements.btnText.textContent = 'Rate Limited';
+                elements.searchBtn.classList.add('rate-limited');
+            } else {
+                elements.btnText.textContent = 'Analyze';
+                elements.searchBtn.classList.remove('rate-limited');
+            }
+        }
+
+        function showRateLimitWarning(message, retryAfter) {
+            elements.rateLimitMessage.textContent = message;
+            elements.rateLimitWarning.style.display = 'block';
+            elements.rateLimitWarning.classList.add('visible');
+            
+            if (retryAfter) {
+                appState.rateLimitEndTime = Date.now() + (retryAfter * 1000);
+                startRateLimitCountdown();
+            }
+        }
+
+        function hideRateLimitWarning() {
+            elements.rateLimitWarning.style.display = 'none';
+            elements.rateLimitWarning.classList.remove('visible');
+            appState.rateLimitEndTime = null;
+            clearInterval(appState.rateLimitCountdown);
+        }
+
+        function startRateLimitCountdown() {
+            clearInterval(appState.rateLimitCountdown);
+            
+            appState.rateLimitCountdown = setInterval(() => {
+                if (!appState.rateLimitEndTime) {
+                    clearInterval(appState.rateLimitCountdown);
+                    return;
+                }
+                
+                const remaining = Math.max(0, Math.ceil((appState.rateLimitEndTime - Date.now()) / 1000));
+                
+                if (remaining <= 0) {
+                    hideRateLimitWarning();
+                    updateButtonState();
+                    clearInterval(appState.rateLimitCountdown);
+                } else {
+                    elements.rateLimitCountdown.textContent = `Try again in ${remaining}s`;
+                    updateButtonState();
+                }
+            }, 1000);
         }
 
         function resetUI() {
@@ -178,7 +249,6 @@
                     if (data.error) {
                         elements.progressText.textContent = data.error;
                         setSearchState(false);
-                        // Do NOT hide the progress section!
                         return;
                     }
                     updateProgress(data.progress, data.total, data.done);
@@ -198,14 +268,12 @@
                         setTimeout(() => pollProgress(jobId), 500);
                     } else {
                         setSearchState(false);
-                        // keep the progress section visible
                     }
                 })
                 .catch(error => {
                     console.error('Error polling progress:', error);
                     elements.progressText.textContent = 'Network error occurred';
                     setSearchState(false);
-                    // Do NOT hide the progress section!
                 });
         }
 
@@ -295,6 +363,11 @@
         elements.searchForm.addEventListener('submit', function(e) {
             e.preventDefault();
             if (appState.searchRunning) return;
+            
+            // Check if rate limited
+            const isRateLimited = appState.rateLimitEndTime && Date.now() < appState.rateLimitEndTime;
+            if (isRateLimited) return;
+            
             elements.searchBtn.disabled = true;
             setTimeout(() => { elements.searchBtn.blur(); }, 50);
             const username = this.username.value.trim();
@@ -308,6 +381,7 @@
                 return;
             }
             resetUI();
+            hideRateLimitWarning();
             showSection(elements.progressSection);
             setSearchState(true);
             const formData = new FormData(this);
@@ -315,7 +389,14 @@
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 429) {
+                    return response.json().then(data => {
+                        throw new Error(`RATE_LIMIT:${data.retry_after || 60}:${data.message || 'Rate limit exceeded'}`);
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data && data.job_id) {
                     pollProgress(data.job_id);
@@ -326,7 +407,15 @@
             })
             .catch(error => {
                 console.error('Error starting check:', error);
-                elements.progressText.textContent = 'Network error occurred';
+                if (error.message.startsWith('RATE_LIMIT:')) {
+                    const parts = error.message.split(':');
+                    const retryAfter = parseInt(parts[1]) || 60;
+                    const message = parts[2] || 'Rate limit exceeded';
+                    showRateLimitWarning(message, retryAfter);
+                    hideSection(elements.progressSection);
+                } else {
+                    elements.progressText.textContent = 'Network error occurred';
+                }
                 setSearchState(false);
             });
         });
@@ -364,9 +453,25 @@
             });
         }
 
+        // Check rate limit status on page load
+        function checkRateLimitStatus() {
+            fetch('/rate_limit_status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.rate_limited) {
+                        showRateLimitWarning('Rate limit active', data.reset_time);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking rate limit status:', error);
+                });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             initParticles();
             initSpotlight();
+            checkRateLimitStatus();
+            updateButtonState();
         });
     </script>
 </body>
