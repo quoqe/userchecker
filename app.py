@@ -5,6 +5,7 @@ import threading
 import time
 import logging
 import os
+import re
 from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, request, jsonify, session
 from flask_limiter import Limiter
@@ -13,6 +14,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from config import config
 import secrets
 from datetime import datetime
+from cryptography.fernet import Fernet
 
 def create_app():
     app = Flask(__name__)
@@ -70,6 +72,13 @@ def create_app():
     ip_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
     ip_logger.addHandler(ip_file_handler)
 
+    # Encryption for sensitive data
+    def get_encryption_key():
+        key = app.config['SECRET_KEY'].encode()
+        # Pad or truncate to 32 bytes for Fernet
+        key = key[:32].ljust(32, b'0')
+        return Fernet.generate_key() if len(key) < 32 else Fernet(key)
+
     def sanitize_username(username):
         """Enhanced username validation with security checks"""
         if not username or len(username) > 50:
@@ -83,6 +92,23 @@ def create_app():
         if any(pattern in username for pattern in suspicious_patterns):
             return None
         return username.strip()
+
+    def sanitize_email(email):
+        """Enhanced email validation with security checks"""
+        if not email or len(email) > 254:
+            return None
+        
+        # Basic email regex pattern
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return None
+        
+        # Additional security: check for suspicious patterns
+        suspicious_patterns = ['<', '>', '"', "'", '&', '%', '\\', '?', '#', ';']
+        if any(pattern in email for pattern in suspicious_patterns):
+            return None
+        
+        return email.strip().lower()
 
     def generate_job_id():
         return secrets.token_urlsafe(32)
@@ -229,6 +255,103 @@ def create_app():
 
         except Exception as e:
             app.logger.error(f"Error in tiktok_check: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
+
+    @app.route('/osint_check', methods=['POST'])
+    @limiter.limit("2 per minute")  # More restrictive rate limit for OSINT API
+    def osint_check():
+        try:
+            # Enhanced CSRF protection
+            csrf_token = request.form.get('csrf_token')
+            if not csrf_token or csrf_token != session.get('csrf_token'):
+                app.logger.warning(f"CSRF token mismatch from IP: {get_client_ip()}")
+                return jsonify({'error': 'Invalid CSRF token'}), 403
+
+            # Check if API key is configured
+            if not app.config.get('OSINT_API_KEY'):
+                app.logger.error("OSINT API key not configured")
+                return jsonify({'error': 'Service temporarily unavailable'}), 503
+
+            # Enhanced input validation
+            email = request.form.get('email', '').strip()
+            email = sanitize_email(email)
+            if not email:
+                app.logger.warning(f"Invalid email format from IP: {get_client_ip()}")
+                return jsonify({'error': 'Invalid email format'}), 400
+
+            client_ip = get_client_ip()
+            ip_logger.info(f"{client_ip} OSINT:{email}")
+
+            async def fetch_osint_data():
+                try:
+                    # Secure headers with API key
+                    headers = {
+                        'X-API-Key': app.config['OSINT_API_KEY'],
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                    
+                    # Secure payload construction
+                    payload = {
+                        "field": [{"email": email}]
+                    }
+                    
+                    async with httpx.AsyncClient(
+                        timeout=45.0,  # Longer timeout for OSINT API
+                        follow_redirects=False,  # Don't follow redirects for security
+                        limits=httpx.Limits(max_keepalive_connections=3, max_connections=5)
+                    ) as client:
+                        response = await client.post(
+                            app.config['OSINT_API_URL'],
+                            headers=headers,
+                            json=payload
+                        )
+                        
+                        if response.status_code == 200:
+                            try:
+                                data = response.json()
+                                # Validate and sanitize response
+                                if not isinstance(data, dict):
+                                    return {'error': 'Invalid response format'}, 500
+                                
+                                # Log successful API call (without sensitive data)
+                                app.logger.info(f"OSINT API call successful for IP: {client_ip}")
+                                return data, 200
+                                
+                            except json.JSONDecodeError:
+                                app.logger.error("Invalid JSON response from OSINT API")
+                                return {'error': 'Invalid response from service'}, 500
+                                
+                        elif response.status_code == 401:
+                            app.logger.error("OSINT API authentication failed")
+                            return {'error': 'Service authentication failed'}, 503
+                        elif response.status_code == 429:
+                            app.logger.warning("OSINT API rate limit exceeded")
+                            return {'error': 'Service rate limit exceeded. Please try again later.'}, 429
+                        elif response.status_code == 404:
+                            return {'error': 'No data found for this email'}, 404
+                        else:
+                            app.logger.error(f"OSINT API returned status {response.status_code}")
+                            return {'error': f'Service returned status {response.status_code}'}, response.status_code
+                            
+                except httpx.TimeoutException:
+                    app.logger.error("OSINT API timeout")
+                    return {'error': 'Request timeout. Please try again.'}, 408
+                except httpx.RequestError as e:
+                    app.logger.error(f"OSINT API request error: {e}")
+                    return {'error': 'Failed to connect to service'}, 500
+                except Exception as e:
+                    app.logger.error(f"Unexpected error in OSINT check: {e}")
+                    return {'error': 'An unexpected error occurred'}, 500
+
+            # Run the async function
+            result, status = asyncio.run(fetch_osint_data())
+            return jsonify(result), status
+
+        except Exception as e:
+            app.logger.error(f"Error in osint_check: {e}")
             return jsonify({'error': 'Internal server error'}), 500
 
     @app.route('/rate_limit_status')

@@ -21,6 +21,10 @@ class Config:
     
     # Logging
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    
+    # OSINT API Configuration
+    OSINT_API_KEY = os.environ.get('OSINT_API_KEY')
+    OSINT_API_URL = os.environ.get('OSINT_API_URL', 'https://osintdog.com/api/search')
 
 class DevelopmentConfig(Config):
     DEBUG = True
